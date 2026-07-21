@@ -1,0 +1,61 @@
+"use strict";
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.ExportService = void 0;
+const common_1 = require("@nestjs/common");
+const archiver_1 = require("archiver");
+const stream_1 = require("stream");
+const render_service_1 = require("../render/render.service");
+const templates_service_1 = require("../templates/templates.service");
+const datasets_service_1 = require("../datasets/datasets.service");
+const conversion_service_1 = require("../conversion/conversion.service");
+let ExportService = class ExportService {
+    renderService;
+    templatesService;
+    datasetsService;
+    conversionService;
+    constructor(renderService, templatesService, datasetsService, conversionService) {
+        this.renderService = renderService;
+        this.templatesService = templatesService;
+        this.datasetsService = datasetsService;
+        this.conversionService = conversionService;
+    }
+    exportAllAsZip(templateId) {
+        const templateBuffer = this.templatesService.getDocxBuffer(templateId);
+        const rows = this.datasetsService.listRows(templateId);
+        const stream = new stream_1.PassThrough();
+        const archive = new archiver_1.ZipArchive({ zlib: { level: 9 } });
+        archive.on('error', (err) => stream.emit('error', err));
+        archive.pipe(stream);
+        (async () => {
+            for (const row of rows) {
+                const mergedDocx = this.renderService.merge(templateBuffer, row.data);
+                const pdf = await this.conversionService.docxToPdf(mergedDocx, `${row.id}.docx`);
+                this.datasetsService.markUsed(templateId, row.id);
+                const nameKey = Object.keys(row.data).find((k) => k.toLowerCase() === 'name' || k.toLowerCase() === 'title');
+                const label = nameKey ? row.data[nameKey] : null;
+                const filenameLabel = label ? label.trim().replace(/[^a-zA-Z0-9_-]/g, '_') : row.id.slice(0, 8);
+                archive.append(pdf, { name: `${filenameLabel}-${row.id.slice(0, 8)}.pdf` });
+            }
+            archive.finalize();
+        })().catch((err) => stream.emit('error', err));
+        return stream;
+    }
+};
+exports.ExportService = ExportService;
+exports.ExportService = ExportService = __decorate([
+    (0, common_1.Injectable)(),
+    __metadata("design:paramtypes", [render_service_1.RenderService,
+        templates_service_1.TemplatesService,
+        datasets_service_1.DatasetsService,
+        conversion_service_1.ConversionService])
+], ExportService);
+//# sourceMappingURL=export.service.js.map

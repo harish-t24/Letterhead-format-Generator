@@ -1,0 +1,18 @@
+{
+  "e6dd74f3-0245-4ffc-bcc5-87bb9b48706f": {
+    "id": "e6dd74f3-0245-4ffc-bcc5-87bb9b48706f",
+    "templateName": "Harish",
+    "originalName": "Shinecraft Letterhead.docx",
+    "docxPath": "C:\\Internship\\Shine craft\\template-merge-tool\\backend\\storage\\uploads\\e6dd74f3-0245-4ffc-bcc5-87bb9b48706f.docx",
+    "html": "<p>     </p><p>Dear {name},</p><p>[Type your letter content here — wrap any word in curly braces, like this, to make it a per-recipient field.]</p>",
+    "bodyHtml": "\n    <p>Dear {name},</p>\n    <p></p>\n    <p>[Type your letter content here — wrap any word in curly braces, like this, to make it a per-recipient field.]</p>\n  ",
+    "headerHtml": "\n    <p style=\"text-align:center; margin:0;\">\n      <strong style=\"font-size:16px; letter-spacing:1px;\">SHINECRAFT</strong>\n    </p>\n    <p style=\"text-align:center; margin:0; font-size:10px; color:#555;\">\n      123 Business Avenue, Suite 400 &nbsp;|&nbsp; contact@shinecraft.example\n    </p>\n  ",
+    "footerHtml": "\n    <p style=\"text-align:center; margin:0; font-size:9px; color:#777;\">\n      Shinecraft Industries — Confidential\n    </p>\n  ",
+    "placeholders": [
+      "name"
+    ],
+    "source": "shinecraft",
+    "createdAt": "2026-07-21T07:30:18.324Z",
+    "updatedAt": "2026-07-21T07:30:18.324Z"
+  }
+}

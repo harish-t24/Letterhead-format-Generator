@@ -1,0 +1,6 @@
+
+# Runtime storage (uploaded templates + generated merges/exports)
+storage/uploads/*
+storage/generated/*
+!storage/uploads/.gitkeep
+!storage/generated/.gitkeep

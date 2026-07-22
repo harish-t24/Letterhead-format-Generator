@@ -553,51 +553,24 @@ tr:hover td {
 }
 
 .template-creator-editor {
-  border: none !important;
-  background: transparent !important;
+  border: 1px solid #cbd5e1 !important;
+  border-radius: 4px !important;
+  padding: 80px 80px; /* standard document margins */
+  background: #ffffff !important;
   width: 100%;
   max-width: 794px; /* A4 page standard width */
-  box-shadow: none !important;
+  min-height: 1123px !important; /* A4 page standard height */
+  box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.08), 0 8px 10px -6px rgba(15, 23, 42, 0.04) !important;
   box-sizing: border-box;
   margin: 0 auto;
 }
 
 .template-creator-editor .ProseMirror {
   outline: none;
-  min-height: 1123px; /* A4 page standard height */
+  min-height: 963px; /* A4 height minus top/bottom margins */
   width: 100%;
   box-sizing: border-box;
-  padding: 80px 80px !important; /* standard document margins inside the white sheet */
-  background-color: var(--bg-secondary) !important;
-  
-  /* Paint separate pages with shadows and borders on the gray desk background */
-  background-image:
-    /* Left page border (repeating, height 1123px, gap 40px) */
-    linear-gradient(to right, #cbd5e1 1px, transparent 1px),
-    /* Right page border (repeating, height 1123px, gap 40px) */
-    linear-gradient(to left, #cbd5e1 1px, transparent 1px),
-    /* Page shadow left (repeating, height 1123px, gap 40px) */
-    linear-gradient(to right, rgba(15, 23, 42, 0.05) 5px, transparent 5px),
-    /* Page shadow right (repeating, height 1123px, gap 40px) */
-    linear-gradient(to left, rgba(15, 23, 42, 0.05) 5px, transparent 5px),
-    /* Top & bottom page borders + white background (repeating, height 1123px, gap 40px) */
-    linear-gradient(to bottom, #cbd5e1 0px, #cbd5e1 1px, #ffffff 1px, #ffffff 1122px, #cbd5e1 1122px, #cbd5e1 1123px, transparent 1123px);
-    
-  background-size:
-    1px 1163px, /* Left border width 1px, repeats every 1163px */
-    1px 1163px, /* Right border width 1px, repeats every 1163px */
-    6px 1163px, /* Left shadow width 6px, repeats every 1163px */
-    6px 1163px, /* Right shadow width 6px, repeats every 1163px */
-    100% 1163px; /* Page body width 100%, repeats every 1163px */
-    
-  background-position:
-    left 0px top 0px,
-    right 0px top 0px,
-    left 0px top 0px,
-    right 0px top 0px,
-    left 0px top 0px;
-    
-  background-repeat: repeat-y;
+  background-color: transparent !important;
 }
 
 .template-editor p,
@@ -656,4 +629,90 @@ canvas {
 canvas:hover {
   transform: scale(1.005);
   box-shadow: var(--shadow-lg);
+}
+
+/* Page Indicator Badges */
+.page-indicator {
+  position: absolute;
+  left: calc(50% + 412px);
+  color: var(--text-secondary);
+  font-family: 'Outfit', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  background: var(--bg-surface);
+  padding: 4px 12px;
+  border-radius: 99px;
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-sm);
+  pointer-events: none;
+  user-select: none;
+  z-index: 2;
+  transition: var(--transition);
+}
+
+@media (max-width: 1024px) {
+  .page-indicator {
+    display: none !important;
+  }
+}
+
+/* Page Break Element */
+div.page-break {
+  break-before: column !important;
+  page-break-before: always !important;
+  page-break-after: always !important;
+  margin: 32px 0 !important;
+  border: none !important;
+  border-top: 2px dashed #94a3b8 !important;
+  height: 1px !important;
+  position: relative;
+  overflow: visible;
+  display: block;
+}
+
+div.page-break::after {
+  content: "Page Break";
+  position: absolute;
+  top: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #ffffff;
+  color: #64748b;
+  font-family: 'Outfit', sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 2px 8px;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  pointer-events: none;
+}
+
+/* Document table formatting */
+.template-editor table,
+.template-creator-editor .ProseMirror table {
+  width: 100% !important;
+  border-collapse: collapse !important;
+  margin: 1em 0 !important;
+  table-layout: fixed !important;
+}
+
+.template-editor table td,
+.template-editor table th,
+.template-creator-editor .ProseMirror table td,
+.template-creator-editor .ProseMirror table th {
+  border: 1px solid #cbd5e1 !important;
+  padding: 8px 12px !important;
+  min-width: 1em !important;
+  box-sizing: border-box !important;
+  vertical-align: top !important;
+  background-color: transparent !important;
+  color: inherit !important;
+}
+
+.template-editor table th,
+.template-creator-editor .ProseMirror table th {
+  font-weight: bold !important;
+  background-color: #f8fafc !important;
 }

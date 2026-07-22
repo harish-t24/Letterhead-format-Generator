@@ -26,4 +26,8 @@ export interface TemplateRecord {
   source: TemplateSource;
   createdAt: string;
   updatedAt: string;
+  marginTop?: number;
+  marginBottom?: number;
+  marginLeft?: number;
+  marginRight?: number;
 }

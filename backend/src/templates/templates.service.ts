@@ -27,6 +27,16 @@ export class TemplatesService {
       if (fs.existsSync(METADATA_FILE)) {
         const data = fs.readFileSync(METADATA_FILE, 'utf-8');
         const parsed = JSON.parse(data);
+
+        // Sanitize margins (migrate older pixel values like 80 to 1.0 inch)
+        for (const key of Object.keys(parsed)) {
+          const t = parsed[key];
+          if (t.marginTop !== undefined && t.marginTop > 5) t.marginTop = t.marginTop / 80;
+          if (t.marginBottom !== undefined && t.marginBottom > 5) t.marginBottom = t.marginBottom / 80;
+          if (t.marginLeft !== undefined && t.marginLeft > 5) t.marginLeft = t.marginLeft / 80;
+          if (t.marginRight !== undefined && t.marginRight > 5) t.marginRight = t.marginRight / 80;
+        }
+
         this.templates = new Map<string, TemplateRecord>(Object.entries(parsed));
       }
     } catch (err: any) {
@@ -106,6 +116,10 @@ export class TemplatesService {
       footerHtml: footerHtml,
       includeHeader: includeHeader,
       includeFooter: includeFooter,
+      marginTop: 1.0,
+      marginBottom: 1.0,
+      marginLeft: 1.0,
+      marginRight: 1.0,
     });
     fs.writeFileSync(docxPath, docxBuffer);
 
@@ -126,6 +140,10 @@ export class TemplatesService {
       source: source as TemplateSource,
       createdAt: now,
       updatedAt: now,
+      marginTop: 1.0,
+      marginBottom: 1.0,
+      marginLeft: 1.0,
+      marginRight: 1.0,
     };
 
     this.templates.set(id, record);
@@ -141,7 +159,11 @@ export class TemplatesService {
     id: string,
     bodyHtml?: string,
     headerHtml?: string,
-    footerHtml?: string
+    footerHtml?: string,
+    marginTop?: number,
+    marginBottom?: number,
+    marginLeft?: number,
+    marginRight?: number
   ): Promise<TemplateRecord> {
     const record = this.findOne(id);
     if (record.source === 'imported') {
@@ -151,6 +173,17 @@ export class TemplatesService {
     const finalBodyHtml = bodyHtml !== undefined ? bodyHtml : (record.bodyHtml ?? record.html);
     const finalHeaderHtml = headerHtml !== undefined ? headerHtml : record.headerHtml;
     const finalFooterHtml = footerHtml !== undefined ? footerHtml : record.footerHtml;
+    const rawMarginTop = marginTop !== undefined ? marginTop : (record.marginTop ?? 1.0);
+    const finalMarginTop = rawMarginTop > 5 ? rawMarginTop / 80 : rawMarginTop;
+
+    const rawMarginBottom = marginBottom !== undefined ? marginBottom : (record.marginBottom ?? 1.0);
+    const finalMarginBottom = rawMarginBottom > 5 ? rawMarginBottom / 80 : rawMarginBottom;
+
+    const rawMarginLeft = marginLeft !== undefined ? marginLeft : (record.marginLeft ?? 1.0);
+    const finalMarginLeft = rawMarginLeft > 5 ? rawMarginLeft / 80 : rawMarginLeft;
+
+    const rawMarginRight = marginRight !== undefined ? marginRight : (record.marginRight ?? 1.0);
+    const finalMarginRight = rawMarginRight > 5 ? rawMarginRight / 80 : rawMarginRight;
 
     const braceCheck = validateBraces(finalBodyHtml);
     if (!braceCheck.valid) {
@@ -163,6 +196,10 @@ export class TemplatesService {
       footerHtml: finalFooterHtml,
       includeHeader: !!finalHeaderHtml,
       includeFooter: !!finalFooterHtml,
+      marginTop: finalMarginTop,
+      marginBottom: finalMarginBottom,
+      marginLeft: finalMarginLeft,
+      marginRight: finalMarginRight,
     });
     fs.writeFileSync(record.docxPath, docxBuffer);
 
@@ -171,6 +208,10 @@ export class TemplatesService {
     record.bodyHtml = finalBodyHtml;
     record.headerHtml = finalHeaderHtml;
     record.footerHtml = finalFooterHtml;
+    record.marginTop = finalMarginTop;
+    record.marginBottom = finalMarginBottom;
+    record.marginLeft = finalMarginLeft;
+    record.marginRight = finalMarginRight;
     record.placeholders = extractPlaceholdersFromDocx(docxBuffer);
     record.updatedAt = new Date().toISOString();
     this.saveTemplates();

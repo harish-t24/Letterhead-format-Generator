@@ -93,7 +93,16 @@ export class TemplatesController {
   /** Saves edited body content back into the DOCX (header/footer preserved untouched). */
   @Patch(':id/content')
   async updateContent(@Param('id') id: string, @Body() dto: UpdateContentDto) {
-    return this.templatesService.updateContent(id, dto.bodyHtml, dto.headerHtml, dto.footerHtml);
+    return this.templatesService.updateContent(
+      id,
+      dto.bodyHtml,
+      dto.headerHtml,
+      dto.footerHtml,
+      dto.marginTop,
+      dto.marginBottom,
+      dto.marginLeft,
+      dto.marginRight,
+    );
   }
 
   @Patch(':id/rename')

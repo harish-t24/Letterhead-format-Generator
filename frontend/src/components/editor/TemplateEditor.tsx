@@ -5,8 +5,12 @@ import FontFamily from '@tiptap/extension-font-family';
 import { Color } from '@tiptap/extension-color';
 import Subscript from '@tiptap/extension-subscript';
 import Superscript from '@tiptap/extension-superscript';
-import Highlight from '@tiptap/extension-highlight';
-import { FontSize } from './TemplateCreatorEditor';
+import { Table } from '@tiptap/extension-table';
+import { TableRow } from '@tiptap/extension-table-row';
+import { TableCell } from '@tiptap/extension-table-cell';
+import { TableHeader } from '@tiptap/extension-table-header';
+import { FontSize, HighlightStyle } from './TemplateCreatorEditor';
+import { PageBreak } from './PageBreak';
 import { useEffect } from 'react';
 
 interface Props {
@@ -30,9 +34,18 @@ export function TemplateEditor({ html, editable = false }: Props) {
       FontFamily,
       Color,
       FontSize,
+      HighlightStyle,
       Subscript,
       Superscript,
-      Highlight.configure({ multicolor: true }),
+      PageBreak,
+      Table.configure({
+        HTMLAttributes: {
+          class: 'editor-table',
+        },
+      }),
+      TableRow,
+      TableHeader,
+      TableCell,
     ],
     content: html,
     editable,

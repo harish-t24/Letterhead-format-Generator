@@ -5,4 +5,8 @@ export declare function buildDocx(params: {
     includeHeader: boolean;
     includeFooter: boolean;
     pageNumber?: boolean;
+    marginTop?: number;
+    marginBottom?: number;
+    marginLeft?: number;
+    marginRight?: number;
 }): Promise<Buffer>;

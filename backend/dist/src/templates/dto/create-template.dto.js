@@ -17,6 +17,10 @@ class UpdateContentDto {
     bodyHtml;
     headerHtml;
     footerHtml;
+    marginTop;
+    marginBottom;
+    marginLeft;
+    marginRight;
 }
 exports.UpdateContentDto = UpdateContentDto;
 class RenameTemplateDto {

@@ -66,6 +66,17 @@ let TemplatesService = class TemplatesService {
             if (fs.existsSync(METADATA_FILE)) {
                 const data = fs.readFileSync(METADATA_FILE, 'utf-8');
                 const parsed = JSON.parse(data);
+                for (const key of Object.keys(parsed)) {
+                    const t = parsed[key];
+                    if (t.marginTop !== undefined && t.marginTop > 5)
+                        t.marginTop = t.marginTop / 80;
+                    if (t.marginBottom !== undefined && t.marginBottom > 5)
+                        t.marginBottom = t.marginBottom / 80;
+                    if (t.marginLeft !== undefined && t.marginLeft > 5)
+                        t.marginLeft = t.marginLeft / 80;
+                    if (t.marginRight !== undefined && t.marginRight > 5)
+                        t.marginRight = t.marginRight / 80;
+                }
                 this.templates = new Map(Object.entries(parsed));
             }
         }
@@ -122,6 +133,10 @@ let TemplatesService = class TemplatesService {
             footerHtml: footerHtml,
             includeHeader: includeHeader,
             includeFooter: includeFooter,
+            marginTop: 1.0,
+            marginBottom: 1.0,
+            marginLeft: 1.0,
+            marginRight: 1.0,
         });
         fs.writeFileSync(docxPath, docxBuffer);
         const { value: html } = await mammoth.convertToHtml({ buffer: docxBuffer });
@@ -140,12 +155,16 @@ let TemplatesService = class TemplatesService {
             source: source,
             createdAt: now,
             updatedAt: now,
+            marginTop: 1.0,
+            marginBottom: 1.0,
+            marginLeft: 1.0,
+            marginRight: 1.0,
         };
         this.templates.set(id, record);
         this.saveTemplates();
         return record;
     }
-    async updateContent(id, bodyHtml, headerHtml, footerHtml) {
+    async updateContent(id, bodyHtml, headerHtml, footerHtml, marginTop, marginBottom, marginLeft, marginRight) {
         const record = this.findOne(id);
         if (record.source === 'imported') {
             throw new Error('Imported templates cannot be edited this way — re-import instead.');
@@ -153,6 +172,14 @@ let TemplatesService = class TemplatesService {
         const finalBodyHtml = bodyHtml !== undefined ? bodyHtml : (record.bodyHtml ?? record.html);
         const finalHeaderHtml = headerHtml !== undefined ? headerHtml : record.headerHtml;
         const finalFooterHtml = footerHtml !== undefined ? footerHtml : record.footerHtml;
+        const rawMarginTop = marginTop !== undefined ? marginTop : (record.marginTop ?? 1.0);
+        const finalMarginTop = rawMarginTop > 5 ? rawMarginTop / 80 : rawMarginTop;
+        const rawMarginBottom = marginBottom !== undefined ? marginBottom : (record.marginBottom ?? 1.0);
+        const finalMarginBottom = rawMarginBottom > 5 ? rawMarginBottom / 80 : rawMarginBottom;
+        const rawMarginLeft = marginLeft !== undefined ? marginLeft : (record.marginLeft ?? 1.0);
+        const finalMarginLeft = rawMarginLeft > 5 ? rawMarginLeft / 80 : rawMarginLeft;
+        const rawMarginRight = marginRight !== undefined ? marginRight : (record.marginRight ?? 1.0);
+        const finalMarginRight = rawMarginRight > 5 ? rawMarginRight / 80 : rawMarginRight;
         const braceCheck = (0, placeholder_parser_1.validateBraces)(finalBodyHtml);
         if (!braceCheck.valid) {
             throw new Error(`Malformed placeholders: ${braceCheck.error}`);
@@ -163,6 +190,10 @@ let TemplatesService = class TemplatesService {
             footerHtml: finalFooterHtml,
             includeHeader: !!finalHeaderHtml,
             includeFooter: !!finalFooterHtml,
+            marginTop: finalMarginTop,
+            marginBottom: finalMarginBottom,
+            marginLeft: finalMarginLeft,
+            marginRight: finalMarginRight,
         });
         fs.writeFileSync(record.docxPath, docxBuffer);
         const { value: html } = await mammoth.convertToHtml({ buffer: docxBuffer });
@@ -170,6 +201,10 @@ let TemplatesService = class TemplatesService {
         record.bodyHtml = finalBodyHtml;
         record.headerHtml = finalHeaderHtml;
         record.footerHtml = finalFooterHtml;
+        record.marginTop = finalMarginTop;
+        record.marginBottom = finalMarginBottom;
+        record.marginLeft = finalMarginLeft;
+        record.marginRight = finalMarginRight;
         record.placeholders = (0, placeholder_parser_1.extractPlaceholdersFromDocx)(docxBuffer);
         record.updatedAt = new Date().toISOString();
         this.saveTemplates();

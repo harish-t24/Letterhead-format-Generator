@@ -69,7 +69,7 @@ let TemplatesController = class TemplatesController {
         return this.templatesService.findOne(id);
     }
     async updateContent(id, dto) {
-        return this.templatesService.updateContent(id, dto.bodyHtml, dto.headerHtml, dto.footerHtml);
+        return this.templatesService.updateContent(id, dto.bodyHtml, dto.headerHtml, dto.footerHtml, dto.marginTop, dto.marginBottom, dto.marginLeft, dto.marginRight);
     }
     async rename(id, dto) {
         return this.templatesService.renameTemplate(id, dto.templateName ?? '');

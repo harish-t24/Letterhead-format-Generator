@@ -46,9 +46,12 @@ export function PdfDocumentView({ pdfUrl, scale = 1.3, onLoaded }: Props) {
           canvas.height = viewport.height;
           canvas.style.display = 'block';
           canvas.style.width = '100%';
+          canvas.style.maxWidth = '794px';
           canvas.style.height = 'auto';
           canvas.style.border = '1px solid #e5e7eb';
-          canvas.style.marginBottom = '10px';
+          canvas.style.marginBottom = '20px';
+          canvas.style.marginLeft = 'auto';
+          canvas.style.marginRight = 'auto';
           canvas.style.background = 'white';
 
           const ctx = canvas.getContext('2d')!;

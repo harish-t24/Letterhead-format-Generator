@@ -24,7 +24,7 @@ exports.SHINECRAFT_STARTER = {
   `,
     footerHtml: `
     <p style="text-align:center; margin:0; font-size:9px; color:#777;">
-      Shinecraft Industries — Confidential
+      Shinecraft Industries — Confidential &nbsp;|&nbsp; Page 
     </p>
   `,
     bodyHtml: `

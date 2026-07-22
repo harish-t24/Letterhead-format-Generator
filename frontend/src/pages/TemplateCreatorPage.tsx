@@ -40,12 +40,24 @@ export function TemplateCreatorPage() {
   const [footerW, setFooterW] = useState(0);
   const [footerH, setFooterH] = useState(0);
 
+  // Margin states in inches
+  const [marginTop, setMarginTop] = useState(1.0);
+  const [marginBottom, setMarginBottom] = useState(1.0);
+  const [marginLeft, setMarginLeft] = useState(1.0);
+  const [marginRight, setMarginRight] = useState(1.0);
+  const [marginUnit, setMarginUnit] = useState<'in' | 'cm'>('in');
+
   useEffect(() => {
     if (!templateId) return;
     api.getTemplate(templateId).then((t) => {
       setTemplate(t);
       setNameDraft(t.templateName);
       lastSavedHtml.current = t.bodyHtml ?? t.html;
+
+      setMarginTop(t.marginTop ?? 1.0);
+      setMarginBottom(t.marginBottom ?? 1.0);
+      setMarginLeft(t.marginLeft ?? 1.0);
+      setMarginRight(t.marginRight ?? 1.0);
 
       // Extract header state
       if (t.headerHtml) {
@@ -100,7 +112,16 @@ export function TemplateCreatorPage() {
     setStatus('saving');
 
     api
-      .updateTemplateContent(templateId, debouncedHtml)
+      .updateTemplateContent(
+        templateId,
+        debouncedHtml,
+        undefined,
+        undefined,
+        marginTop,
+        marginBottom,
+        marginLeft,
+        marginRight
+      )
       .then((updated) => {
         if (cancelled) return;
         lastSavedHtml.current = debouncedHtml;
@@ -115,7 +136,7 @@ export function TemplateCreatorPage() {
     return () => {
       cancelled = true;
     };
-  }, [debouncedHtml, templateId]);
+  }, [debouncedHtml, templateId, marginTop, marginBottom, marginLeft, marginRight]);
 
   if (!template || !templateId) {
     return <p style={{ padding: '2rem' }}>Loading…</p>;
@@ -124,6 +145,58 @@ export function TemplateCreatorPage() {
   const handleEditorChange = (html: string) => {
     setDraftHtml(html);
     setStatus('typing');
+  };
+
+  const handleSaveMargins = async (top: number, bottom: number, left: number, right: number) => {
+    if (!templateId || !template) return;
+    setStatus('saving');
+    try {
+      const currentBodyHtml = editorRef.current?.getHTML() ?? template.bodyHtml ?? template.html;
+      const headerToSend = hasHeader
+        ? (headerEditType === 'image' && headerImgVal
+            ? `<p style="text-align:center; margin:0;"><img src="${headerImgVal}" width="${headerW}" height="${headerH}" /></p>`
+            : headerVal)
+        : '';
+      const footerToSend = hasFooter
+        ? (footerEditType === 'image' && footerImgVal
+            ? `<p style="text-align:center; margin:0;"><img src="${footerImgVal}" width="${footerW}" height="${footerH}" /></p>`
+            : footerVal)
+        : '';
+
+      const updated = await api.updateTemplateContent(
+        templateId,
+        currentBodyHtml,
+        headerToSend,
+        footerToSend,
+        top,
+        bottom,
+        left,
+        right
+      );
+      setTemplate(updated);
+      setMarginTop(updated.marginTop ?? 1.0);
+      setMarginBottom(updated.marginBottom ?? 1.0);
+      setMarginLeft(updated.marginLeft ?? 1.0);
+      setMarginRight(updated.marginRight ?? 1.0);
+      setStatus('saved');
+      setPreviewNonce((n) => n + 1);
+    } catch (err) {
+      setStatus('error');
+    }
+  };
+
+  const handleMarginInputChange = (field: 'top' | 'bottom' | 'left' | 'right', rawVal: string) => {
+    const numeric = parseFloat(rawVal) || 0.1;
+    const inchesVal = marginUnit === 'cm' ? numeric / 2.54 : numeric;
+    if (field === 'top') setMarginTop(inchesVal);
+    else if (field === 'bottom') setMarginBottom(inchesVal);
+    else if (field === 'left') setMarginLeft(inchesVal);
+    else if (field === 'right') setMarginRight(inchesVal);
+  };
+
+  const triggerSaveMargins = () => {
+    const clamp = (val: number) => Math.max(0.2, Math.min(2.5, val));
+    handleSaveMargins(clamp(marginTop), clamp(marginBottom), clamp(marginLeft), clamp(marginRight));
   };
 
   const handleSaveHeaderFooter = async (
@@ -155,7 +228,11 @@ export function TemplateCreatorPage() {
         templateId,
         currentBodyHtml,
         headerToSend,
-        footerToSend
+        footerToSend,
+        marginTop,
+        marginBottom,
+        marginLeft,
+        marginRight
       );
       setTemplate(updated);
       setStatus('saved');
@@ -351,11 +428,220 @@ export function TemplateCreatorPage() {
             </div>
           ) : (
             <>
-              <TemplateCreatorEditor
+               <TemplateCreatorEditor
                 ref={editorRef}
                 initialHtml={template.bodyHtml ?? template.html}
+                headerHtml={template.headerHtml}
+                footerHtml={template.footerHtml}
+                marginTop={marginTop}
+                marginBottom={marginBottom}
+                marginLeft={marginLeft}
+                marginRight={marginRight}
                 onChange={handleEditorChange}
               />
+
+              {/* Page Margin Setup Panel */}
+              <div className="app-card" style={{ marginTop: 24, padding: 24 }}>
+                <h3 style={{ marginTop: 0, marginBottom: 20, display: 'flex', alignItems: 'center', gap: 8, fontFamily: "'Outfit', sans-serif" }}>
+                  📐 Page Margin Setup (Microsoft Word Style)
+                </h3>
+
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 24, alignItems: 'flex-end' }}>
+                  <div style={{ flex: '1 1 180px' }}>
+                    <label style={{ display: 'block', fontWeight: 700, fontSize: 13, color: 'var(--text-secondary)', marginBottom: 8 }}>
+                      Margins Preset
+                    </label>
+                    <select
+                      value={
+                        Math.abs(marginTop - 1.0) < 0.01 && Math.abs(marginBottom - 1.0) < 0.01 && Math.abs(marginLeft - 1.0) < 0.01 && Math.abs(marginRight - 1.0) < 0.01
+                          ? 'normal'
+                          : Math.abs(marginTop - 0.5) < 0.01 && Math.abs(marginBottom - 0.5) < 0.01 && Math.abs(marginLeft - 0.5) < 0.01 && Math.abs(marginRight - 0.5) < 0.01
+                          ? 'narrow'
+                          : Math.abs(marginTop - 1.5) < 0.01 && Math.abs(marginBottom - 1.5) < 0.01 && Math.abs(marginLeft - 1.5) < 0.01 && Math.abs(marginRight - 1.5) < 0.01
+                          ? 'wide'
+                          : 'custom'
+                      }
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (val === 'normal') {
+                          handleSaveMargins(1.0, 1.0, 1.0, 1.0);
+                        } else if (val === 'narrow') {
+                          handleSaveMargins(0.5, 0.5, 0.5, 0.5);
+                        } else if (val === 'wide') {
+                          handleSaveMargins(1.5, 1.5, 1.5, 1.5);
+                        }
+                      }}
+                      style={{
+                        width: '100%',
+                        padding: '10px 12px',
+                        border: '1px solid var(--border-color)',
+                        borderRadius: 'var(--radius-sm)',
+                        background: 'var(--bg-surface)',
+                        color: 'var(--text-primary)',
+                        fontSize: 14,
+                        fontFamily: "'Outfit', sans-serif",
+                        outline: 'none',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      <option value="normal">Normal (1.0 in / 2.54 cm)</option>
+                      <option value="narrow">Narrow (0.5 in / 1.27 cm)</option>
+                      <option value="wide">Wide (1.5 in / 3.81 cm)</option>
+                      <option value="custom">Custom margins...</option>
+                    </select>
+                  </div>
+
+                  <div style={{ flex: '1 1 180px' }}>
+                    <label style={{ display: 'block', fontWeight: 700, fontSize: 13, color: 'var(--text-secondary)', marginBottom: 8 }}>
+                      Margin Unit
+                    </label>
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      <button
+                        type="button"
+                        onClick={() => setMarginUnit('in')}
+                        style={{
+                          flex: 1,
+                          padding: '10px 12px',
+                          borderRadius: 'var(--radius-sm)',
+                          border: '1px solid var(--border-color)',
+                          background: marginUnit === 'in' ? 'var(--primary)' : 'var(--bg-surface)',
+                          color: marginUnit === 'in' ? '#ffffff' : 'var(--text-primary)',
+                          fontWeight: 700,
+                          fontSize: 13,
+                          cursor: 'pointer',
+                          transition: 'var(--transition)',
+                        }}
+                      >
+                        Inches (in)
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setMarginUnit('cm')}
+                        style={{
+                          flex: 1,
+                          padding: '10px 12px',
+                          borderRadius: 'var(--radius-sm)',
+                          border: '1px solid var(--border-color)',
+                          background: marginUnit === 'cm' ? 'var(--primary)' : 'var(--bg-surface)',
+                          color: marginUnit === 'cm' ? '#ffffff' : 'var(--text-primary)',
+                          fontWeight: 700,
+                          fontSize: 13,
+                          cursor: 'pointer',
+                          transition: 'var(--transition)',
+                        }}
+                      >
+                        Centimeters (cm)
+                      </button>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', flex: '2 1 400px' }}>
+                    <div>
+                      <label style={{ display: 'block', fontWeight: 600, fontSize: 12, color: 'var(--text-secondary)', marginBottom: 6 }}>
+                        Top ({marginUnit})
+                      </label>
+                      <input
+                        type="number"
+                        min={marginUnit === 'in' ? 0.2 : 0.5}
+                        max={marginUnit === 'in' ? 2.5 : 6.3}
+                        step={0.1}
+                        value={marginUnit === 'in' ? marginTop : parseFloat((marginTop * 2.54).toFixed(2))}
+                        onChange={(e) => handleMarginInputChange('top', e.target.value)}
+                        onBlur={triggerSaveMargins}
+                        style={{
+                          width: 80,
+                          padding: '8px 10px',
+                          border: '1px solid var(--border-color)',
+                          borderRadius: 'var(--radius-sm)',
+                          background: 'var(--bg-surface)',
+                          color: 'var(--text-primary)',
+                          textAlign: 'center',
+                          fontFamily: "'Outfit', sans-serif",
+                          outline: 'none',
+                        }}
+                      />
+                    </div>
+
+                    <div>
+                      <label style={{ display: 'block', fontWeight: 600, fontSize: 12, color: 'var(--text-secondary)', marginBottom: 6 }}>
+                        Bottom ({marginUnit})
+                      </label>
+                      <input
+                        type="number"
+                        min={marginUnit === 'in' ? 0.2 : 0.5}
+                        max={marginUnit === 'in' ? 2.5 : 6.3}
+                        step={0.1}
+                        value={marginUnit === 'in' ? marginBottom : parseFloat((marginBottom * 2.54).toFixed(2))}
+                        onChange={(e) => handleMarginInputChange('bottom', e.target.value)}
+                        onBlur={triggerSaveMargins}
+                        style={{
+                          width: 80,
+                          padding: '8px 10px',
+                          border: '1px solid var(--border-color)',
+                          borderRadius: 'var(--radius-sm)',
+                          background: 'var(--bg-surface)',
+                          color: 'var(--text-primary)',
+                          textAlign: 'center',
+                          fontFamily: "'Outfit', sans-serif",
+                          outline: 'none',
+                        }}
+                      />
+                    </div>
+
+                    <div>
+                      <label style={{ display: 'block', fontWeight: 600, fontSize: 12, color: 'var(--text-secondary)', marginBottom: 6 }}>
+                        Left ({marginUnit})
+                      </label>
+                      <input
+                        type="number"
+                        min={marginUnit === 'in' ? 0.2 : 0.5}
+                        max={marginUnit === 'in' ? 2.5 : 6.3}
+                        step={0.1}
+                        value={marginUnit === 'in' ? marginLeft : parseFloat((marginLeft * 2.54).toFixed(2))}
+                        onChange={(e) => handleMarginInputChange('left', e.target.value)}
+                        onBlur={triggerSaveMargins}
+                        style={{
+                          width: 80,
+                          padding: '8px 10px',
+                          border: '1px solid var(--border-color)',
+                          borderRadius: 'var(--radius-sm)',
+                          background: 'var(--bg-surface)',
+                          color: 'var(--text-primary)',
+                          textAlign: 'center',
+                          fontFamily: "'Outfit', sans-serif",
+                          outline: 'none',
+                        }}
+                      />
+                    </div>
+
+                    <div>
+                      <label style={{ display: 'block', fontWeight: 600, fontSize: 12, color: 'var(--text-secondary)', marginBottom: 6 }}>
+                        Right ({marginUnit})
+                      </label>
+                      <input
+                        type="number"
+                        min={marginUnit === 'in' ? 0.2 : 0.5}
+                        max={marginUnit === 'in' ? 2.5 : 6.3}
+                        step={0.1}
+                        value={marginUnit === 'in' ? marginRight : parseFloat((marginRight * 2.54).toFixed(2))}
+                        onChange={(e) => handleMarginInputChange('right', e.target.value)}
+                        onBlur={triggerSaveMargins}
+                        style={{
+                          width: 80,
+                          padding: '8px 10px',
+                          border: '1px solid var(--border-color)',
+                          borderRadius: 'var(--radius-sm)',
+                          background: 'var(--bg-surface)',
+                          color: 'var(--text-primary)',
+                          textAlign: 'center',
+                          fontFamily: "'Outfit', sans-serif",
+                          outline: 'none',
+                        }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
 
               {/* Header & Footer Layout Configuration Panel */}
               <div className="app-card" style={{ marginTop: 24, padding: 24 }}>

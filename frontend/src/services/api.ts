@@ -44,11 +44,19 @@ export async function updateTemplateContent(
   bodyHtml?: string,
   headerHtml?: string,
   footerHtml?: string,
+  marginTop?: number,
+  marginBottom?: number,
+  marginLeft?: number,
+  marginRight?: number,
 ): Promise<TemplateRecord> {
   const res = await api.patch<TemplateRecord>(`/templates/${templateId}/content`, {
     bodyHtml,
     headerHtml,
     footerHtml,
+    marginTop,
+    marginBottom,
+    marginLeft,
+    marginRight,
   });
   return res.data;
 }

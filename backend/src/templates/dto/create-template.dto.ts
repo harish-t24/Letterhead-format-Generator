@@ -14,6 +14,10 @@ export class UpdateContentDto {
   bodyHtml?: string;
   headerHtml?: string;
   footerHtml?: string;
+  marginTop?: number;
+  marginBottom?: number;
+  marginLeft?: number;
+  marginRight?: number;
 }
 
 export class RenameTemplateDto {

@@ -7,10 +7,14 @@ import FontFamily from '@tiptap/extension-font-family';
 import { Color } from '@tiptap/extension-color';
 import Subscript from '@tiptap/extension-subscript';
 import Superscript from '@tiptap/extension-superscript';
-import Highlight from '@tiptap/extension-highlight';
+import { Table } from '@tiptap/extension-table';
+import { TableRow } from '@tiptap/extension-table-row';
+import { TableCell } from '@tiptap/extension-table-cell';
+import { TableHeader } from '@tiptap/extension-table-header';
 import { Extension } from '@tiptap/core';
 import { useEffect, useImperativeHandle, forwardRef } from 'react';
 import { EditorToolbar } from './EditorToolbar';
+import { PageBreak } from './PageBreak';
 
 export const FontSize = Extension.create({
   name: 'fontSize',
@@ -59,6 +63,53 @@ export const FontSize = Extension.create({
   },
 });
 
+export const HighlightStyle = Extension.create({
+  name: 'highlightStyle',
+
+  addOptions() {
+    return {
+      types: ['textStyle'],
+    };
+  },
+
+  addGlobalAttributes() {
+    return [
+      {
+        types: this.options.types,
+        attributes: {
+          backgroundColor: {
+            default: null,
+            parseHTML: (element) => element.style.backgroundColor || element.style.background,
+            renderHTML: (attributes) => {
+              if (!attributes.backgroundColor) {
+                return {};
+              }
+              return {
+                style: `background-color: ${attributes.backgroundColor}`,
+              };
+            },
+          },
+        },
+      },
+    ];
+  },
+
+  addCommands(): any {
+    return {
+      setHighlightColor: (color: string) => ({ chain }: any) => {
+        return chain()
+          .setMark('textStyle', { backgroundColor: color })
+          .run();
+      },
+      unsetHighlightColor: () => ({ chain }: any) => {
+        return chain()
+          .setMark('textStyle', { backgroundColor: null })
+          .run();
+      },
+    };
+  },
+});
+
 export interface TemplateCreatorEditorHandle {
   getHTML: () => string;
   /** Inserts `{name}` at the current cursor position (click-to-insert
@@ -68,6 +119,12 @@ export interface TemplateCreatorEditorHandle {
 
 interface Props {
   initialHtml: string;
+  headerHtml?: string;
+  footerHtml?: string;
+  marginTop?: number;
+  marginBottom?: number;
+  marginLeft?: number;
+  marginRight?: number;
   /** Fires on every content change (typing, pasting, formatting, etc.)
    *  with the current HTML — lets the parent debounce and auto-save so
    *  the preview updates dynamically without a manual Save click. */
@@ -89,7 +146,7 @@ interface Props {
  * HTML tags (<ul>, <ol>, <strong>, <em>) map onto.
  */
 export const TemplateCreatorEditor = forwardRef<TemplateCreatorEditorHandle, Props>(
-  ({ initialHtml, onChange }, ref) => {
+  ({ initialHtml, headerHtml, footerHtml, marginTop = 1.0, marginBottom = 1.0, marginLeft = 1.0, marginRight = 1.0, onChange }, ref) => {
     const editor = useEditor({
       extensions: [
         StarterKit,
@@ -98,10 +155,19 @@ export const TemplateCreatorEditor = forwardRef<TemplateCreatorEditorHandle, Pro
         FontFamily,
         Color,
         FontSize,
+        HighlightStyle,
         Subscript,
         Superscript,
-        Highlight.configure({ multicolor: true }),
+        PageBreak,
         TextAlign.configure({ types: ['heading', 'paragraph'] }),
+        Table.configure({
+          HTMLAttributes: {
+            class: 'editor-table',
+          },
+        }),
+        TableRow,
+        TableHeader,
+        TableCell,
       ],
       content: initialHtml,
       editable: true,
@@ -124,13 +190,66 @@ export const TemplateCreatorEditor = forwardRef<TemplateCreatorEditorHandle, Pro
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
+    // Convert inches to pixels (1 inch = 96px)
+    const marginTopPx = marginTop * 96;
+    const marginBottomPx = marginBottom * 96;
+    const marginLeftPx = marginLeft * 96;
+    const marginRightPx = marginRight * 96;
+
     return (
       <div style={{ position: 'relative', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)' }}>
         <div style={{ position: 'sticky', top: 0, zIndex: 10, background: 'var(--bg-surface)', borderBottom: '1px solid var(--border-color)' }}>
           <EditorToolbar editor={editor} />
         </div>
-        <div className="editor-desk">
-          <div className="template-creator-editor">
+        <div className="editor-desk" style={{ position: 'relative' }}>
+          <div
+            className="template-creator-editor"
+            style={{
+              position: 'relative',
+              maxWidth: '794px',
+              padding: `${marginTopPx}px ${marginRightPx}px ${marginBottomPx}px ${marginLeftPx}px`,
+            }}
+          >
+            {headerHtml && (
+              <div
+                className="editor-header-overlay"
+                style={{
+                  position: 'absolute',
+                  left: 0,
+                  width: 794,
+                  height: marginTopPx,
+                  top: 0,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  overflow: 'hidden',
+                  zIndex: 1,
+                  padding: `0 ${marginRightPx}px 0 ${marginLeftPx}px`,
+                  boxSizing: 'border-box',
+                }}
+                dangerouslySetInnerHTML={{ __html: headerHtml }}
+              />
+            )}
+            {footerHtml && (
+              <div
+                className="editor-footer-overlay"
+                style={{
+                  position: 'absolute',
+                  left: 0,
+                  width: 794,
+                  height: marginBottomPx,
+                  bottom: 0,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  overflow: 'hidden',
+                  zIndex: 1,
+                  padding: `0 ${marginRightPx}px 0 ${marginLeftPx}px`,
+                  boxSizing: 'border-box',
+                }}
+                dangerouslySetInnerHTML={{ __html: footerHtml }}
+              />
+            )}
             <EditorContent editor={editor} />
           </div>
         </div>

@@ -44,14 +44,37 @@ export function DataTable({
           </code>
         ),
       }),
-      ...columns.map((placeholder) =>
+      ...columns.map((placeholder, colIndex) =>
         columnHelper.display({
           id: placeholder,
           header: placeholder,
           cell: (ctx) => {
             const row = ctx.row.original;
+            const rowIndex = ctx.row.index;
             const isEditing = editingCell?.rowId === row.id && editingCell?.col === placeholder;
             const value = row.data[placeholder] ?? '';
+
+            const moveToNextCell = (currentVal: string, isBackwards = false) => {
+              onCellEdit(row.id, placeholder, currentVal);
+
+              if (!isBackwards) {
+                if (colIndex < columns.length - 1) {
+                  setEditingCell({ rowId: row.id, col: columns[colIndex + 1] });
+                } else if (rowIndex < rows.length - 1) {
+                  setEditingCell({ rowId: rows[rowIndex + 1].id, col: columns[0] });
+                } else {
+                  setEditingCell(null);
+                }
+              } else {
+                if (colIndex > 0) {
+                  setEditingCell({ rowId: row.id, col: columns[colIndex - 1] });
+                } else if (rowIndex > 0) {
+                  setEditingCell({ rowId: rows[rowIndex - 1].id, col: columns[columns.length - 1] });
+                } else {
+                  setEditingCell(null);
+                }
+              }
+            };
 
             if (isEditing) {
               return (
@@ -63,10 +86,26 @@ export function DataTable({
                     setEditingCell(null);
                   }}
                   onKeyDown={(e) => {
-                    if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
-                    if (e.key === 'Escape') setEditingCell(null);
+                    if (e.key === 'Enter' || e.key === 'Tab') {
+                      e.preventDefault();
+                      const input = e.currentTarget;
+                      input.onblur = null;
+                      moveToNextCell(input.value, e.shiftKey);
+                    } else if (e.key === 'Escape') {
+                      const input = e.currentTarget;
+                      input.onblur = null;
+                      setEditingCell(null);
+                    }
                   }}
-                  style={{ width: '100%', border: '1px solid #4f46e5', padding: '2px 4px' }}
+                  style={{
+                    width: '100%',
+                    border: '2px solid var(--primary)',
+                    padding: '4px 8px',
+                    borderRadius: 'var(--radius-sm)',
+                    outline: 'none',
+                    background: 'var(--bg-surface)',
+                    boxShadow: '0 0 0 3px var(--primary-glow)',
+                  }}
                 />
               );
             }
@@ -74,10 +113,10 @@ export function DataTable({
             return (
               <div
                 onClick={() => setEditingCell({ rowId: row.id, col: placeholder })}
-                style={{ minHeight: 20, cursor: 'text' }}
-                title="Click to edit"
+                style={{ minHeight: 22, cursor: 'text', padding: '2px 4px', borderRadius: 4, transition: 'var(--transition)' }}
+                title="Click to edit (Press Enter to save & move to next area)"
               >
-                {value || <span style={{ color: '#c7c7d1' }}>—</span>}
+                {value || <span style={{ color: 'var(--text-muted)' }}>—</span>}
               </div>
             );
           },
@@ -127,7 +166,7 @@ export function DataTable({
       }),
     ];
     return cols;
-  }, [columns, editingCell, onCellEdit, onDeleteRow]);
+  }, [columns, rows, editingCell, onCellEdit, onDeleteRow]);
 
   const table = useReactTable({
     data: rows,

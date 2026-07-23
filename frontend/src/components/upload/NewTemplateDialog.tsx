@@ -102,6 +102,14 @@ export function NewTemplateDialog({ onClose, onCreate, onImport, creating, impor
               <input
                 value={name}
                 onChange={(e) => setName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && selected && name.trim() && !busy) {
+                    e.preventDefault();
+                    if (selected === 'blank' || selected === 'shinecraft') {
+                      onCreate(selected, name.trim());
+                    }
+                  }
+                }}
                 placeholder="e.g., Client Offer Letter"
                 disabled={!selected}
                 style={{

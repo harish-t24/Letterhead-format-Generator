@@ -9,9 +9,9 @@ function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString(undefined, { day: '2-digit', month: 'short', year: 'numeric' });
 }
 
-function StatCard({ label, value, icon }: { label: string; value: number; icon: string }) {
+function StatCard({ label, value, icon, onClick }: { label: string; value: number; icon: string; onClick?: () => void }) {
   return (
-    <div className="stat-card" style={{ flex: 1 }}>
+    <div className="stat-card" onClick={onClick} style={{ flex: 1, cursor: onClick ? 'pointer' : 'default' }}>
       <div className="stat-icon">{icon}</div>
       <div className="stat-details">
         <span className="stat-label">{label}</span>
@@ -72,9 +72,9 @@ export function DashboardPage() {
       </div>
 
       <div className="stat-grid">
-        <StatCard label="Total Templates" value={templates.length} icon="📄" />
-        <StatCard label="Total Datasets" value={datasets.length} icon="🗂️" />
-        <StatCard label="Total Records" value={totalRecords} icon="🧾" />
+        <StatCard label="Total Templates" value={templates.length} icon="📄" onClick={() => navigate('/templates')} />
+        <StatCard label="Total Datasets" value={datasets.length} icon="🗂️" onClick={() => navigate('/datasets')} />
+        <StatCard label="Total Records" value={totalRecords} icon="🧾" onClick={() => navigate('/datasets')} />
       </div>
 
       <div style={{ display: 'flex', gap: 28, alignItems: 'flex-start', flexWrap: 'wrap' }}>

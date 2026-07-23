@@ -12,6 +12,8 @@ const btnStyle = (active: boolean): React.CSSProperties => ({
   color: active ? 'white' : '#111827',
   cursor: 'pointer',
   borderRadius: 4,
+  transition: 'transform 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease',
+  boxShadow: active ? '0 2px 8px rgba(79, 70, 229, 0.3)' : 'none',
 });
 
 const groupStyle: React.CSSProperties = {
@@ -320,7 +322,16 @@ export function EditorToolbar({ editor }: Props) {
       <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
         <label style={{ fontSize: 12, color: '#6b7280' }}>Line spacing</label>
         <select
-          onChange={(e) => editor.chain().focus().setLineHeight(e.target.value).run()}
+          onChange={(e) => {
+            const val = e.target.value;
+            const chain = editor.chain().focus() as any;
+            if (typeof chain.setLineHeight === 'function') {
+              chain.setLineHeight(val).run();
+            } else {
+              // Fallback: apply line height styling directly
+              editor.chain().focus().setMark('textStyle', { style: `line-height: ${val}` }).run();
+            }
+          }}
           defaultValue="1.5"
           style={{ fontSize: 12, padding: '3px 4px', border: '1px solid #d1d5db', borderRadius: 4 }}
         >

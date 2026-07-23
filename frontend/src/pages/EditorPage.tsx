@@ -10,6 +10,7 @@ import { AddRowButton } from '../components/table/AddRowButton';
 import { PdfPreview } from '../components/preview/PdfPreview';
 import { AllRowsPreview } from '../components/preview/AllRowsPreview';
 import { PrintButton } from '../components/preview/PrintButton';
+import { TemplateInfoPanel } from '../components/editor/TemplateInfoPanel';
 import * as api from '../services/api';
 
 type PreviewMode = 'single' | 'all';
@@ -42,7 +43,7 @@ export function EditorPage() {
       : null;
 
   return (
-    <div style={{ maxWidth: 1200, margin: '0 auto', padding: '2rem' }}>
+    <div style={{ maxWidth: 1550, width: '100%', margin: '0 auto', padding: '2rem 1.5rem', boxSizing: 'border-box' }}>
       <div style={{ marginBottom: 16 }}>
         <Link to="/templates" style={{ fontSize: 13, color: 'var(--text-secondary)', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
           &larr; Back to Templates
@@ -51,9 +52,19 @@ export function EditorPage() {
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 6, flexWrap: 'wrap', gap: 16 }}>
         <div>
-          <h2 style={{ fontSize: '1.75rem', fontWeight: 800, fontFamily: "'Outfit', sans-serif", margin: 0 }}>
-            {activeTemplate.templateName}
-          </h2>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+            <h2 style={{ fontSize: '1.75rem', fontWeight: 800, fontFamily: "'Outfit', sans-serif", margin: 0 }}>
+              {activeTemplate.templateName}
+            </h2>
+            <TemplateInfoPanel
+              templateId={activeTemplate.id}
+              templateName={activeTemplate.templateName}
+              fieldCount={activeTemplate.placeholders.length}
+              placeholders={activeTemplate.placeholders}
+              createdAt={activeTemplate.createdAt}
+              source={activeTemplate.source}
+            />
+          </div>
           <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 8, display: 'flex', gap: 12, alignItems: 'center' }}>
             <span style={{ fontFamily: 'monospace', background: 'var(--bg-secondary)', padding: '2px 8px', borderRadius: 4, color: 'var(--text-secondary)' }}>
               ID: {activeTemplate.id.slice(0, 18)}...

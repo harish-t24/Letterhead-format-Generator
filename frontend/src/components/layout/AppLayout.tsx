@@ -17,13 +17,14 @@ const NAV_ITEMS = [
  */
 export function AppLayout() {
   const [collapsed, setCollapsed] = useState(false);
+  const [showAdminMenu, setShowAdminMenu] = useState(false);
 
   return (
     <div style={{ display: 'flex', height: '100vh', background: 'var(--bg-primary)' }}>
       <aside
         style={{
           width: collapsed ? 68 : 240,
-          transition: 'width 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+          transition: 'width 0.25s cubic-bezier(0.34, 1.56, 0.64, 1)',
           background: 'var(--bg-sidebar)',
           display: 'flex',
           flexDirection: 'column',
@@ -79,6 +80,7 @@ export function AppLayout() {
             padding: '0 24px',
             flexShrink: 0,
             boxShadow: 'var(--shadow-sm)',
+            position: 'relative',
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
@@ -93,6 +95,7 @@ export function AppLayout() {
                 color: 'var(--text-secondary)',
                 padding: '6px 10px',
                 borderRadius: 'var(--radius-sm)',
+                transition: 'var(--transition)',
               }}
             >
               ☰
@@ -102,11 +105,102 @@ export function AppLayout() {
             </span>
           </div>
 
-          <div className="top-bar-user">
-            <span style={{ fontSize: 13, color: 'var(--text-secondary)', fontWeight: 600 }}>Admin</span>
-            <div className="user-avatar" title="Administrator Account">
-              AD
-            </div>
+          <div style={{ position: 'relative' }}>
+            <button
+              onClick={() => setShowAdminMenu((prev) => !prev)}
+              className="top-bar-user"
+              style={{
+                border: 'none',
+                background: showAdminMenu ? 'var(--primary-glow)' : 'transparent',
+                padding: '4px 8px',
+                borderRadius: 'var(--radius-sm)',
+                cursor: 'pointer',
+                transition: 'var(--transition)',
+              }}
+              title="Admin Menu"
+            >
+              <span style={{ fontSize: 13, color: 'var(--text-secondary)', fontWeight: 600 }}>
+                Admin ▾
+              </span>
+              <div className="user-avatar" title="Administrator Account">
+                AD
+              </div>
+            </button>
+
+            {showAdminMenu && (
+              <div
+                style={{
+                  position: 'absolute',
+                  top: 48,
+                  right: 0,
+                  width: 280,
+                  background: 'var(--bg-surface)',
+                  border: '1px solid var(--border-color)',
+                  borderRadius: 'var(--radius-md)',
+                  boxShadow: 'var(--shadow-lg)',
+                  padding: 16,
+                  zIndex: 100,
+                  animation: 'modalPop 0.2s cubic-bezier(0.34, 1.56, 0.64, 1)',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12, borderBottom: '1px solid var(--border-color)', paddingBottom: 12 }}>
+                  <div className="user-avatar" style={{ width: 40, height: 40, fontSize: 16 }}>AD</div>
+                  <div>
+                    <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--text-primary)' }}>System Administrator</div>
+                    <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>admin@shinecraft.internal</div>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8, fontSize: 12 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text-secondary)' }}>
+                    <span>System Status:</span>
+                    <span style={{ color: 'var(--success)', fontWeight: 700 }}>🟢 Operational</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text-secondary)' }}>
+                    <span>Merge Engine:</span>
+                    <span style={{ fontWeight: 600, color: 'var(--primary)' }}>Gotenberg PDF v8</span>
+                  </div>
+                </div>
+
+                <div style={{ marginTop: 16, paddingTop: 12, borderTop: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  <button
+                    onClick={() => {
+                      setShowAdminMenu(false);
+                      window.location.reload();
+                    }}
+                    style={{
+                      width: '100%',
+                      padding: '6px 12px',
+                      background: 'var(--bg-secondary)',
+                      color: 'var(--text-secondary)',
+                      border: 'none',
+                      borderRadius: 'var(--radius-sm)',
+                      cursor: 'pointer',
+                      fontSize: 12,
+                      fontWeight: 600,
+                    }}
+                  >
+                    🔄 Reload Workspace
+                  </button>
+                  <button
+                    onClick={() => setShowAdminMenu(false)}
+                    style={{
+                      width: '100%',
+                      padding: '6px 12px',
+                      background: 'var(--primary)',
+                      color: '#ffffff',
+                      border: 'none',
+                      borderRadius: 'var(--radius-sm)',
+                      cursor: 'pointer',
+                      fontSize: 12,
+                      fontWeight: 600,
+                    }}
+                  >
+                    Close Menu
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </header>
 

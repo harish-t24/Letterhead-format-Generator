@@ -357,7 +357,7 @@ export function TemplateCreatorPage() {
   };
 
   return (
-    <div style={{ maxWidth: 1200, margin: '0 auto', padding: '2rem' }}>
+    <div style={{ maxWidth: 1550, width: '100%', margin: '0 auto', padding: '2rem 1.5rem', boxSizing: 'border-box' }}>
       <div style={{ marginBottom: 16 }}>
         <Link to="/templates" style={{ fontSize: 13, color: 'var(--text-secondary)', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
           &larr; Back to Templates
@@ -365,7 +365,7 @@ export function TemplateCreatorPage() {
       </div>
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24, flexWrap: 'wrap', gap: 16 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
           <span style={{ color: 'var(--text-muted)', fontSize: 14, fontWeight: 500 }}>Template —</span>
           <input
             value={nameDraft}
@@ -391,6 +391,14 @@ export function TemplateCreatorPage() {
           <span className="badge" style={{ background: statusColor[status] + '15', color: statusColor[status], fontSize: 12, fontWeight: 700 }}>
             {statusLabel[status] || 'Idle'}
           </span>
+          <TemplateInfoPanel
+            templateId={template.id}
+            templateName={template.templateName}
+            fieldCount={template.placeholders.length}
+            placeholders={template.placeholders}
+            createdAt={template.createdAt}
+            source={template.source}
+          />
         </div>
 
         <div style={{ display: 'flex', gap: 10 }}>
@@ -541,6 +549,7 @@ export function TemplateCreatorPage() {
                         Top ({marginUnit})
                       </label>
                       <input
+                        id="margin-input-top"
                         type="number"
                         min={marginUnit === 'in' ? 0.2 : 0.5}
                         max={marginUnit === 'in' ? 2.5 : 6.3}
@@ -548,6 +557,12 @@ export function TemplateCreatorPage() {
                         value={marginUnit === 'in' ? marginTop : parseFloat((marginTop * 2.54).toFixed(2))}
                         onChange={(e) => handleMarginInputChange('top', e.target.value)}
                         onBlur={triggerSaveMargins}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            document.getElementById('margin-input-bottom')?.focus();
+                          }
+                        }}
                         style={{
                           width: 80,
                           padding: '8px 10px',
@@ -567,6 +582,7 @@ export function TemplateCreatorPage() {
                         Bottom ({marginUnit})
                       </label>
                       <input
+                        id="margin-input-bottom"
                         type="number"
                         min={marginUnit === 'in' ? 0.2 : 0.5}
                         max={marginUnit === 'in' ? 2.5 : 6.3}
@@ -574,6 +590,12 @@ export function TemplateCreatorPage() {
                         value={marginUnit === 'in' ? marginBottom : parseFloat((marginBottom * 2.54).toFixed(2))}
                         onChange={(e) => handleMarginInputChange('bottom', e.target.value)}
                         onBlur={triggerSaveMargins}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            document.getElementById('margin-input-left')?.focus();
+                          }
+                        }}
                         style={{
                           width: 80,
                           padding: '8px 10px',
@@ -593,6 +615,7 @@ export function TemplateCreatorPage() {
                         Left ({marginUnit})
                       </label>
                       <input
+                        id="margin-input-left"
                         type="number"
                         min={marginUnit === 'in' ? 0.2 : 0.5}
                         max={marginUnit === 'in' ? 2.5 : 6.3}
@@ -600,6 +623,12 @@ export function TemplateCreatorPage() {
                         value={marginUnit === 'in' ? marginLeft : parseFloat((marginLeft * 2.54).toFixed(2))}
                         onChange={(e) => handleMarginInputChange('left', e.target.value)}
                         onBlur={triggerSaveMargins}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            document.getElementById('margin-input-right')?.focus();
+                          }
+                        }}
                         style={{
                           width: 80,
                           padding: '8px 10px',
@@ -619,6 +648,7 @@ export function TemplateCreatorPage() {
                         Right ({marginUnit})
                       </label>
                       <input
+                        id="margin-input-right"
                         type="number"
                         min={marginUnit === 'in' ? 0.2 : 0.5}
                         max={marginUnit === 'in' ? 2.5 : 6.3}
@@ -626,6 +656,13 @@ export function TemplateCreatorPage() {
                         value={marginUnit === 'in' ? marginRight : parseFloat((marginRight * 2.54).toFixed(2))}
                         onChange={(e) => handleMarginInputChange('right', e.target.value)}
                         onBlur={triggerSaveMargins}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            triggerSaveMargins();
+                            (e.target as HTMLInputElement).blur();
+                          }
+                        }}
                         style={{
                           width: 80,
                           padding: '8px 10px',
@@ -786,16 +823,6 @@ export function TemplateCreatorPage() {
             </>
           )}
         </div>
-
-        {!showPreview && (
-          <div className="app-card" style={{ padding: 20, position: 'sticky', top: 20, alignSelf: 'flex-start' }}>
-            <TemplateInfoPanel
-              templateId={template.id}
-              fieldCount={template.placeholders.length}
-              createdAt={template.createdAt}
-            />
-          </div>
-        )}
       </div>
     </div>
   );

@@ -60,20 +60,41 @@ export function DatasetsPage() {
         </button>
       </div>
 
-      <input
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        placeholder="Search datasets..."
-        style={{
-          width: '100%',
-          maxWidth: 320,
-          padding: '10px 14px',
-          border: '1px solid var(--border-color)',
-          borderRadius: 'var(--radius-sm)',
-          outline: 'none',
-          marginBottom: 24,
-        }}
-      />
+      <div style={{ position: 'relative', width: '100%', maxWidth: 320, marginBottom: 24 }}>
+        <input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="🔍 Search datasets..."
+          style={{
+            width: '100%',
+            padding: '10px 36px 10px 14px',
+            border: '1px solid var(--border-color)',
+            borderRadius: 'var(--radius-sm)',
+            outline: 'none',
+            transition: 'var(--transition)',
+          }}
+        />
+        {search && (
+          <button
+            onClick={() => setSearch('')}
+            style={{
+              position: 'absolute',
+              right: 8,
+              top: '50%',
+              transform: 'translateY(-50%)',
+              border: 'none',
+              background: 'transparent',
+              cursor: 'pointer',
+              color: 'var(--text-muted)',
+              fontSize: 14,
+              padding: 4,
+            }}
+            title="Clear search"
+          >
+            ✕
+          </button>
+        )}
+      </div>
 
       <div className="app-card" style={{ overflow: 'hidden' }}>
         <table style={{ width: '100%' }}>
@@ -145,6 +166,7 @@ const smallBtnOutline: React.CSSProperties = {
   color: 'var(--text-secondary)',
   cursor: 'pointer',
   fontWeight: 600,
+  transition: 'transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1), background-color 0.2s ease',
 };
 
 const smallBtnDelete: React.CSSProperties = {
@@ -156,4 +178,5 @@ const smallBtnDelete: React.CSSProperties = {
   color: 'var(--danger)',
   cursor: 'pointer',
   fontWeight: 600,
+  transition: 'transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1), background-color 0.2s ease',
 };

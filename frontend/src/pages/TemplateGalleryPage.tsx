@@ -117,20 +117,41 @@ export function TemplateGalleryPage() {
       {importing && <p style={{ color: 'var(--text-muted)', marginBottom: 16 }}>Opening file…</p>}
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24, gap: 12, flexWrap: 'wrap' }}>
-        <input
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search by name or ID..."
-          style={{
-            flex: 1,
-            minWidth: 240,
-            maxWidth: 360,
-            padding: '10px 14px',
-            border: '1px solid var(--border-color)',
-            borderRadius: 'var(--radius-sm)',
-            outline: 'none',
-          }}
-        />
+        <div style={{ position: 'relative', flex: 1, minWidth: 240, maxWidth: 360 }}>
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="🔍 Search by name or ID..."
+            style={{
+              width: '100%',
+              padding: '10px 36px 10px 14px',
+              border: '1px solid var(--border-color)',
+              borderRadius: 'var(--radius-sm)',
+              outline: 'none',
+              transition: 'var(--transition)',
+            }}
+          />
+          {search && (
+            <button
+              onClick={() => setSearch('')}
+              style={{
+                position: 'absolute',
+                right: 8,
+                top: '50%',
+                transform: 'translateY(-50%)',
+                border: 'none',
+                background: 'transparent',
+                cursor: 'pointer',
+                color: 'var(--text-muted)',
+                fontSize: 14,
+                padding: 4,
+              }}
+              title="Clear search"
+            >
+              ✕
+            </button>
+          )}
+        </div>
         <div style={{ display: 'flex', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', overflow: 'hidden', boxShadow: 'var(--shadow-sm)' }}>
           <button
             onClick={() => setView('cards')}
@@ -298,6 +319,7 @@ const smallBtnOutline: React.CSSProperties = {
   color: 'var(--text-secondary)',
   cursor: 'pointer',
   fontWeight: 600,
+  transition: 'transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1), background-color 0.2s ease',
 };
 const smallBtnFilled: React.CSSProperties = {
   padding: '6px 12px',
@@ -309,6 +331,7 @@ const smallBtnFilled: React.CSSProperties = {
   cursor: 'pointer',
   display: 'inline-block',
   fontWeight: 600,
+  transition: 'transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease',
 };
 const smallBtnDelete: React.CSSProperties = {
   padding: '6px 12px',
@@ -319,4 +342,5 @@ const smallBtnDelete: React.CSSProperties = {
   color: 'var(--danger)',
   cursor: 'pointer',
   fontWeight: 600,
+  transition: 'transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1), background-color 0.2s ease',
 };

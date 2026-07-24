@@ -1,32 +1,67 @@
-# React + TypeScript + Vite
+# 📄 ShineCraft Letterhead Generator & Mail-Merge Tool
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+A modern full-stack web application for creating custom letterhead templates, managing mail-merge datasets, rendering pixel-perfect PDFs, and bulk-exporting merged documents.
 
-Currently, two official plugins are available:
+> 📘 **Full Documentation**: See [PROJECT_DOCUMENTATION.md](file:///C:/Internship/Shine%20craft/template-merge-tool/PROJECT_DOCUMENTATION.md) for complete end-to-end architecture, API reference, keyboard shortcuts, and project history.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+---
 
-## React Compiler
+## ⚡ Quick Start (How to Run Docker, Backend & Frontend)
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+### 📋 Prerequisites
+- **Node.js**: `v18.x` or higher
+- **npm**: `v9.x` or higher
+- **Docker Desktop**: Running locally
 
-## Expanding the Oxlint configuration
+---
 
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
+### 1️⃣ Step 1: Start Docker Container (Gotenberg PDF Engine)
 
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+```bash
+# In project root directory
+docker compose up -d
 ```
+> Gotenberg runs on [http://localhost:3001](http://localhost:3001)
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+---
+
+### 2️⃣ Step 2: Start Backend Server (NestJS API)
+
+```bash
+cd backend
+npm install
+npm run start:dev
+```
+> Backend API runs on [http://localhost:3005](http://localhost:3005)
+
+---
+
+### 3️⃣ Step 3: Start Frontend Application (React + Vite)
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+> Frontend Application runs on [http://localhost:5173](http://localhost:5173)
+
+---
+
+## 📊 Port Summary
+
+| Service | Technology | URL | Port |
+| :--- | :--- | :--- | :--- |
+| **Frontend App** | React + Vite + TS | [http://localhost:5173](http://localhost:5173) | `5173` |
+| **Backend API** | NestJS | [http://localhost:3005](http://localhost:3005) | `3005` |
+| **PDF Renderer** | Gotenberg 8 (Docker) | [http://localhost:3001](http://localhost:3001) | `3001` |
+
+---
+
+## ✨ Key Features
+- **TipTap Rich Text Editor** with table support, font styling, colors, and manual page breaks.
+- **DOCX Template Importer** with automatic placeholder field detection.
+- **Page Margins Setup** (MS Word style) in inches/cm.
+- **Header & Footer Configuration** with address text or scaled image logo uploads.
+- **Mail-Merge Data Table** with **`Enter` / `Tab` key navigation** to move seamlessly between fields.
+- **Single & Paginated PDF Preview** powered by Gotenberg 8 & PDF.js.
+- **Bulk Export** to ZIP archive or 1-click browser printing.

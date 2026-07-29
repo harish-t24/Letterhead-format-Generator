@@ -110,16 +110,21 @@ export class TemplatesService {
     const headerHtml = options?.headerHtml !== undefined ? options.headerHtml : starter.headerHtml;
     const footerHtml = options?.footerHtml !== undefined ? options.footerHtml : starter.footerHtml;
 
+    const DEFAULT_TOP = 5.4 / 2.54; // 2.126 in
+    const DEFAULT_BOTTOM = 0.63 / 2.54; // 0.248 in
+    const DEFAULT_LEFT = 2.16 / 2.54; // 0.85 in
+    const DEFAULT_RIGHT = 1.27 / 2.54; // 0.5 in
+
     const docxBuffer = await buildDocx({
       bodyHtml: starter.bodyHtml,
       headerHtml: headerHtml,
       footerHtml: footerHtml,
       includeHeader: includeHeader,
       includeFooter: includeFooter,
-      marginTop: 1.0,
-      marginBottom: 1.0,
-      marginLeft: 1.0,
-      marginRight: 1.0,
+      marginTop: DEFAULT_TOP,
+      marginBottom: DEFAULT_BOTTOM,
+      marginLeft: DEFAULT_LEFT,
+      marginRight: DEFAULT_RIGHT,
     });
     fs.writeFileSync(docxPath, docxBuffer);
 
@@ -140,10 +145,10 @@ export class TemplatesService {
       source: source as TemplateSource,
       createdAt: now,
       updatedAt: now,
-      marginTop: 1.0,
-      marginBottom: 1.0,
-      marginLeft: 1.0,
-      marginRight: 1.0,
+      marginTop: DEFAULT_TOP,
+      marginBottom: DEFAULT_BOTTOM,
+      marginLeft: DEFAULT_LEFT,
+      marginRight: DEFAULT_RIGHT,
     };
 
     this.templates.set(id, record);
@@ -170,19 +175,24 @@ export class TemplatesService {
       throw new Error('Imported templates cannot be edited this way — re-import instead.');
     }
 
+    const DEFAULT_TOP = 5.4 / 2.54;
+    const DEFAULT_BOTTOM = 0.63 / 2.54;
+    const DEFAULT_LEFT = 2.16 / 2.54;
+    const DEFAULT_RIGHT = 1.27 / 2.54;
+
     const finalBodyHtml = bodyHtml !== undefined ? bodyHtml : (record.bodyHtml ?? record.html);
     const finalHeaderHtml = headerHtml !== undefined ? headerHtml : record.headerHtml;
     const finalFooterHtml = footerHtml !== undefined ? footerHtml : record.footerHtml;
-    const rawMarginTop = marginTop !== undefined ? marginTop : (record.marginTop ?? 1.0);
+    const rawMarginTop = marginTop !== undefined ? marginTop : (record.marginTop ?? DEFAULT_TOP);
     const finalMarginTop = rawMarginTop > 5 ? rawMarginTop / 80 : rawMarginTop;
 
-    const rawMarginBottom = marginBottom !== undefined ? marginBottom : (record.marginBottom ?? 1.0);
+    const rawMarginBottom = marginBottom !== undefined ? marginBottom : (record.marginBottom ?? DEFAULT_BOTTOM);
     const finalMarginBottom = rawMarginBottom > 5 ? rawMarginBottom / 80 : rawMarginBottom;
 
-    const rawMarginLeft = marginLeft !== undefined ? marginLeft : (record.marginLeft ?? 1.0);
+    const rawMarginLeft = marginLeft !== undefined ? marginLeft : (record.marginLeft ?? DEFAULT_LEFT);
     const finalMarginLeft = rawMarginLeft > 5 ? rawMarginLeft / 80 : rawMarginLeft;
 
-    const rawMarginRight = marginRight !== undefined ? marginRight : (record.marginRight ?? 1.0);
+    const rawMarginRight = marginRight !== undefined ? marginRight : (record.marginRight ?? DEFAULT_RIGHT);
     const finalMarginRight = rawMarginRight > 5 ? rawMarginRight / 80 : rawMarginRight;
 
     const braceCheck = validateBraces(finalBodyHtml);

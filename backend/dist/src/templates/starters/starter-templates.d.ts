@@ -9,4 +9,4 @@ export interface StarterDefinition {
 }
 export declare const BLANK_STARTER: StarterDefinition;
 export declare const SHINECRAFT_STARTER: StarterDefinition;
-export declare function getStarter(source: 'blank' | 'shinecraft'): StarterDefinition;
+export declare function getStarter(source: 'blank' | 'shinecraft' | string): StarterDefinition;

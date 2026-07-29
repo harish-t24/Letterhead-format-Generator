@@ -777,3 +777,68 @@ div.page-break::after {
   font-weight: bold !important;
   background-color: #f8fafc !important;
 }
+
+/* Image formatting in editor */
+.ProseMirror img,
+.template-creator-editor .ProseMirror img,
+.template-editor .ProseMirror img {
+  max-width: 100% !important;
+  height: auto !important;
+  display: block;
+  margin: 10px auto;
+  border-radius: 4px;
+  box-shadow: var(--shadow-sm);
+}
+
+/* Ensure editor text paragraphs layer cleanly on top of behind-text images */
+.ProseMirror p,
+.ProseMirror h1,
+.ProseMirror h2,
+.ProseMirror h3,
+.ProseMirror ul,
+.ProseMirror ol,
+.ProseMirror table {
+  position: relative;
+  z-index: 5;
+}
+
+.ProseMirror [data-text-wrap="behind"],
+.ProseMirror .wrap-behind {
+  position: absolute !important;
+  z-index: 0 !important;
+  opacity: 0.65 !important;
+  pointer-events: auto !important;
+}
+
+.ProseMirror [data-text-wrap="behind"] img,
+.ProseMirror .wrap-behind img {
+  opacity: 0.65 !important;
+  mix-blend-mode: multiply !important;
+}
+
+/* Marginless Header & Footer overlays */
+.editor-header-overlay,
+.editor-footer-overlay {
+  left: 0 !important;
+  right: 0 !important;
+  width: 100% !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  box-sizing: border-box !important;
+}
+
+.editor-header-overlay img,
+.editor-footer-overlay img {
+  width: 100% !important;
+  max-width: 100% !important;
+  height: auto !important;
+  display: block !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+
+
+

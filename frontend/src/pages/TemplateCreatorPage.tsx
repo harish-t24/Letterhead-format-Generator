@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { TemplateCreatorEditor } from '../components/editor/TemplateCreatorEditor';
 import type { TemplateCreatorEditorHandle } from '../components/editor/TemplateCreatorEditor';
-import { PdfDocumentView } from '../components/preview/PdfDocumentView';
+import { A4DocumentPreview } from '../components/preview/A4DocumentPreview';
 import { PlaceholdersPanel } from '../components/editor/PlaceholdersPanel';
 import { TemplateInfoPanel } from '../components/editor/TemplateInfoPanel';
 import { useDebouncedValue } from '../hooks/useDebouncedValue';
@@ -40,11 +40,16 @@ export function TemplateCreatorPage() {
   const [footerW, setFooterW] = useState(0);
   const [footerH, setFooterH] = useState(0);
 
+  const DEFAULT_TOP = 5.4 / 2.54;
+  const DEFAULT_BOTTOM = 0.63 / 2.54;
+  const DEFAULT_LEFT = 2.16 / 2.54;
+  const DEFAULT_RIGHT = 1.27 / 2.54;
+
   // Margin states in inches
-  const [marginTop, setMarginTop] = useState(1.0);
-  const [marginBottom, setMarginBottom] = useState(1.0);
-  const [marginLeft, setMarginLeft] = useState(1.0);
-  const [marginRight, setMarginRight] = useState(1.0);
+  const [marginTop, setMarginTop] = useState(DEFAULT_TOP);
+  const [marginBottom, setMarginBottom] = useState(DEFAULT_BOTTOM);
+  const [marginLeft, setMarginLeft] = useState(DEFAULT_LEFT);
+  const [marginRight, setMarginRight] = useState(DEFAULT_RIGHT);
   const [marginUnit, setMarginUnit] = useState<'in' | 'cm'>('in');
 
   useEffect(() => {
@@ -54,10 +59,10 @@ export function TemplateCreatorPage() {
       setNameDraft(t.templateName);
       lastSavedHtml.current = t.bodyHtml ?? t.html;
 
-      setMarginTop(t.marginTop ?? 1.0);
-      setMarginBottom(t.marginBottom ?? 1.0);
-      setMarginLeft(t.marginLeft ?? 1.0);
-      setMarginRight(t.marginRight ?? 1.0);
+      setMarginTop(t.marginTop ?? DEFAULT_TOP);
+      setMarginBottom(t.marginBottom ?? DEFAULT_BOTTOM);
+      setMarginLeft(t.marginLeft ?? DEFAULT_LEFT);
+      setMarginRight(t.marginRight ?? DEFAULT_RIGHT);
 
       // Extract header state
       if (t.headerHtml) {
@@ -210,7 +215,7 @@ export function TemplateCreatorPage() {
         ? forcedHeaderHtml
         : (hasHeader
             ? (headerEditType === 'image' && headerImgVal
-                ? `<p style="text-align:center; margin:0;"><img src="${headerImgVal}" width="${headerW}" height="${headerH}" /></p>`
+                ? `<p style="text-align:center; margin:0; padding:0; width:100%;"><img src="${headerImgVal}" style="width:100%; display:block; margin:0; padding:0;" /></p>`
                 : headerVal)
             : '');
 
@@ -218,7 +223,7 @@ export function TemplateCreatorPage() {
         ? forcedFooterHtml
         : (hasFooter
             ? (footerEditType === 'image' && footerImgVal
-                ? `<p style="text-align:center; margin:0;"><img src="${footerImgVal}" width="${footerW}" height="${footerH}" /></p>`
+                ? `<p style="text-align:center; margin:0; padding:0; width:100%;"><img src="${footerImgVal}" style="width:100%; display:block; margin:0; padding:0;" /></p>`
                 : footerVal)
             : '');
 
@@ -282,13 +287,13 @@ export function TemplateCreatorPage() {
           setHeaderImgVal(base64);
           setHeaderW(width);
           setHeaderH(height);
-          const finalHeader = `<p style="text-align:center; margin:0;"><img src="${base64}" width="${width}" height="${height}" /></p>`;
+          const finalHeader = `<p style="text-align:center; margin:0; padding:0; width:100%;"><img src="${base64}" style="width:100%; display:block; margin:0; padding:0;" /></p>`;
           handleSaveHeaderFooter(finalHeader, undefined);
         } else {
           setFooterImgVal(base64);
           setFooterW(width);
           setFooterH(height);
-          const finalFooter = `<p style="text-align:center; margin:0;"><img src="${base64}" width="${width}" height="${height}" /></p>`;
+          const finalFooter = `<p style="text-align:center; margin:0; padding:0; width:100%;"><img src="${base64}" style="width:100%; display:block; margin:0; padding:0;" /></p>`;
           handleSaveHeaderFooter(undefined, finalFooter);
         }
       };
@@ -426,14 +431,17 @@ export function TemplateCreatorPage() {
 
         <div style={{ flex: 1, minWidth: 0 }}>
           {showPreview ? (
-            <div className="app-card" style={{ padding: 20 }}>
-              <p style={{ fontSize: 13, color: 'var(--text-secondary)', marginTop: 0, marginBottom: 16 }}>
-                💡 <strong>Live layout preview:</strong> Showing letterhead layout with header &amp; footer. Literal <code>{'{tags}'}</code> represent dynamic fields that will be replaced during merging.
-              </p>
-              <div style={{ maxHeight: '70vh', overflowY: 'auto', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-color)', background: 'var(--bg-secondary)', padding: 16 }}>
-                <PdfDocumentView pdfUrl={previewUrl} key={previewNonce} />
-              </div>
-            </div>
+            <A4DocumentPreview
+              pdfUrl={previewUrl}
+              bodyHtml={template.bodyHtml ?? template.html}
+              headerHtml={template.headerHtml}
+              footerHtml={template.footerHtml}
+              marginTop={marginTop}
+              marginBottom={marginBottom}
+              marginLeft={marginLeft}
+              marginRight={marginRight}
+              nonce={previewNonce}
+            />
           ) : (
             <>
                <TemplateCreatorEditor
@@ -461,7 +469,9 @@ export function TemplateCreatorPage() {
                     </label>
                     <select
                       value={
-                        Math.abs(marginTop - 1.0) < 0.01 && Math.abs(marginBottom - 1.0) < 0.01 && Math.abs(marginLeft - 1.0) < 0.01 && Math.abs(marginRight - 1.0) < 0.01
+                        Math.abs(marginTop - DEFAULT_TOP) < 0.02 && Math.abs(marginBottom - DEFAULT_BOTTOM) < 0.02 && Math.abs(marginLeft - DEFAULT_LEFT) < 0.02 && Math.abs(marginRight - DEFAULT_RIGHT) < 0.02
+                          ? 'default_letterhead'
+                          : Math.abs(marginTop - 1.0) < 0.01 && Math.abs(marginBottom - 1.0) < 0.01 && Math.abs(marginLeft - 1.0) < 0.01 && Math.abs(marginRight - 1.0) < 0.01
                           ? 'normal'
                           : Math.abs(marginTop - 0.5) < 0.01 && Math.abs(marginBottom - 0.5) < 0.01 && Math.abs(marginLeft - 0.5) < 0.01 && Math.abs(marginRight - 0.5) < 0.01
                           ? 'narrow'
@@ -471,7 +481,9 @@ export function TemplateCreatorPage() {
                       }
                       onChange={(e) => {
                         const val = e.target.value;
-                        if (val === 'normal') {
+                        if (val === 'default_letterhead') {
+                          handleSaveMargins(DEFAULT_TOP, DEFAULT_BOTTOM, DEFAULT_LEFT, DEFAULT_RIGHT);
+                        } else if (val === 'normal') {
                           handleSaveMargins(1.0, 1.0, 1.0, 1.0);
                         } else if (val === 'narrow') {
                           handleSaveMargins(0.5, 0.5, 0.5, 0.5);
@@ -492,6 +504,7 @@ export function TemplateCreatorPage() {
                         cursor: 'pointer',
                       }}
                     >
+                      <option value="default_letterhead">Default Letterhead (T: 5.4cm, B: 0.63cm, L: 2.16cm, R: 1.27cm)</option>
                       <option value="normal">Normal (1.0 in / 2.54 cm)</option>
                       <option value="narrow">Narrow (0.5 in / 1.27 cm)</option>
                       <option value="wide">Wide (1.5 in / 3.81 cm)</option>

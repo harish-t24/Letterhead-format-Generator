@@ -48,11 +48,13 @@ export function PdfDocumentView({ pdfUrl, scale = 1.3, onLoaded }: Props) {
           canvas.style.width = '100%';
           canvas.style.maxWidth = '794px';
           canvas.style.height = 'auto';
-          canvas.style.border = '1px solid #e5e7eb';
-          canvas.style.marginBottom = '20px';
+          canvas.style.border = 'none';
+          canvas.style.boxShadow = '0 8px 30px rgba(0, 0, 0, 0.12)';
+          canvas.style.borderRadius = '4px';
+          canvas.style.marginBottom = '32px';
           canvas.style.marginLeft = 'auto';
           canvas.style.marginRight = 'auto';
-          canvas.style.background = 'white';
+          canvas.style.background = '#ffffff';
 
           const ctx = canvas.getContext('2d')!;
           await page.render({ canvasContext: ctx, viewport, canvas }).promise;

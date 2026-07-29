@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.SHINECRAFT_STARTER = exports.BLANK_STARTER = void 0;
 exports.getStarter = getStarter;
+const starter_assets_1 = require("./starter-assets");
 exports.BLANK_STARTER = {
     label: 'Blank Document',
     description: 'An empty page with no header or footer — start from scratch.',
@@ -12,25 +13,19 @@ exports.BLANK_STARTER = {
     footer: false,
 };
 exports.SHINECRAFT_STARTER = {
-    label: 'Shinecraft Letterhead',
-    description: 'Company letterhead with header and footer already in place.',
-    headerHtml: `
-    <p style="text-align:center; margin:0;">
-      <strong style="font-size:16px; letter-spacing:1px;">SHINECRAFT</strong>
-    </p>
-    <p style="text-align:center; margin:0; font-size:10px; color:#555;">
-      123 Business Avenue, Suite 400 &nbsp;|&nbsp; contact@shinecraft.example
-    </p>
-  `,
-    footerHtml: `
-    <p style="text-align:center; margin:0; font-size:9px; color:#777;">
-      Shinecraft Industries — Confidential &nbsp;|&nbsp; Page 
-    </p>
-  `,
+    label: 'Default Letterhead (With Header & Footer)',
+    description: 'Pre-fitted company letterhead template with default marginless header (header.png) and footer (footer.png).',
+    headerHtml: `<p style="text-align:center; margin:0; padding:0; width:100%;"><img src="${starter_assets_1.DEFAULT_HEADER_PNG_BASE64}" style="width:100%; display:block; margin:0 auto; padding:0;" /></p>`,
+    footerHtml: `<p style="text-align:center; margin:0; padding:0; width:100%;"><img src="${starter_assets_1.DEFAULT_FOOTER_PNG_BASE64}" style="width:100%; display:block; margin:0 auto; padding:0;" /></p>`,
     bodyHtml: `
     <p>Dear {name},</p>
     <p></p>
-    <p>[Type your letter content here — wrap any word in curly braces, like this, to make it a per-recipient field.]</p>
+    <p>We are pleased to present this official document for your review. Please examine the terms and details below:</p>
+    <p></p>
+    <p>[Type your letter content here — wrap any custom field in curly braces, like {company_name} or {date}, to convert it into a dynamic variable.]</p>
+    <p></p>
+    <p>Sincerely,</p>
+    <p><strong>The Shinecraft Team</strong></p>
   `,
     header: true,
     footer: true,

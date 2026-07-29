@@ -1,5 +1,6 @@
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
+import { ResizableImage } from './extensions/ResizableImage';
 import Underline from '@tiptap/extension-underline';
 import TextAlign from '@tiptap/extension-text-align';
 import { TextStyle } from '@tiptap/extension-text-style';
@@ -146,7 +147,7 @@ interface Props {
  * HTML tags (<ul>, <ol>, <strong>, <em>) map onto.
  */
 export const TemplateCreatorEditor = forwardRef<TemplateCreatorEditorHandle, Props>(
-  ({ initialHtml, headerHtml, footerHtml, marginTop = 1.0, marginBottom = 1.0, marginLeft = 1.0, marginRight = 1.0, onChange }, ref) => {
+  ({ initialHtml, headerHtml, footerHtml, marginTop = 5.4 / 2.54, marginBottom = 0.63 / 2.54, marginLeft = 2.16 / 2.54, marginRight = 1.27 / 2.54, onChange }, ref) => {
     const editor = useEditor({
       extensions: [
         StarterKit,
@@ -159,6 +160,7 @@ export const TemplateCreatorEditor = forwardRef<TemplateCreatorEditorHandle, Pro
         Subscript,
         Superscript,
         PageBreak,
+        ResizableImage,
         TextAlign.configure({ types: ['heading', 'paragraph'] }),
         Table.configure({
           HTMLAttributes: {
@@ -171,6 +173,63 @@ export const TemplateCreatorEditor = forwardRef<TemplateCreatorEditorHandle, Pro
       ],
       content: initialHtml,
       editable: true,
+      parseOptions: {
+        preserveWhitespace: 'full',
+      },
+      editorProps: {
+        transformPastedHTML: (html) => {
+          return html;
+        },
+        handlePaste: (view, event) => {
+          const items = Array.from(event.clipboardData?.items || []);
+          const imageItem = items.find((item) => item.type.startsWith('image/'));
+
+          if (imageItem) {
+            const file = imageItem.getAsFile();
+            if (file) {
+              event.preventDefault();
+              const reader = new FileReader();
+              reader.onload = (e) => {
+                const base64 = e.target?.result as string;
+                if (base64) {
+                  const { schema, tr } = view.state;
+                  const imageType = schema.nodes.image;
+                  if (imageType) {
+                    const node = imageType.create({ src: base64, alt: file.name || 'Pasted Image' });
+                    const transaction = tr.replaceSelectionWith(node);
+                    view.dispatch(transaction);
+                  }
+                }
+              };
+              reader.readAsDataURL(file);
+              return true;
+            }
+          }
+
+          const files = Array.from(event.clipboardData?.files || []);
+          const imageFile = files.find((f) => f.type.startsWith('image/'));
+          if (imageFile) {
+            event.preventDefault();
+            const reader = new FileReader();
+            reader.onload = (e) => {
+              const base64 = e.target?.result as string;
+              if (base64) {
+                const { schema, tr } = view.state;
+                const imageType = schema.nodes.image;
+                if (imageType) {
+                  const node = imageType.create({ src: base64, alt: imageFile.name || 'Pasted Image' });
+                  const transaction = tr.replaceSelectionWith(node);
+                  view.dispatch(transaction);
+                }
+              }
+            };
+            reader.readAsDataURL(imageFile);
+            return true;
+          }
+
+          return false;
+        },
+      },
       onUpdate: ({ editor }) => {
         // Fires for typed keystrokes AND pasted content alike, since
         // both go through ProseMirror's transaction pipeline.
@@ -207,7 +266,12 @@ export const TemplateCreatorEditor = forwardRef<TemplateCreatorEditorHandle, Pro
             style={{
               position: 'relative',
               maxWidth: '794px',
-              padding: `${marginTopPx}px ${marginRightPx}px ${marginBottomPx}px ${marginLeftPx}px`,
+              width: '100%',
+              margin: '0 auto',
+              minHeight: '1123px',
+              padding: 0,
+              boxSizing: 'border-box',
+              background: '#ffffff',
             }}
           >
             {headerHtml && (
@@ -216,16 +280,13 @@ export const TemplateCreatorEditor = forwardRef<TemplateCreatorEditorHandle, Pro
                 style={{
                   position: 'absolute',
                   left: 0,
-                  width: 794,
-                  height: marginTopPx,
                   top: 0,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  overflow: 'hidden',
+                  width: '100%',
                   zIndex: 1,
-                  padding: `0 ${marginRightPx}px 0 ${marginLeftPx}px`,
+                  padding: 0,
+                  margin: 0,
                   boxSizing: 'border-box',
+                  pointerEvents: 'none',
                 }}
                 dangerouslySetInnerHTML={{ __html: headerHtml }}
               />
@@ -236,21 +297,20 @@ export const TemplateCreatorEditor = forwardRef<TemplateCreatorEditorHandle, Pro
                 style={{
                   position: 'absolute',
                   left: 0,
-                  width: 794,
-                  height: marginBottomPx,
                   bottom: 0,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  overflow: 'hidden',
+                  width: '100%',
                   zIndex: 1,
-                  padding: `0 ${marginRightPx}px 0 ${marginLeftPx}px`,
+                  padding: 0,
+                  margin: 0,
                   boxSizing: 'border-box',
+                  pointerEvents: 'none',
                 }}
                 dangerouslySetInnerHTML={{ __html: footerHtml }}
               />
             )}
-            <EditorContent editor={editor} />
+            <div style={{ padding: `${marginTopPx}px ${marginRightPx}px ${marginBottomPx}px ${marginLeftPx}px`, boxSizing: 'border-box', minHeight: '100%' }}>
+              <EditorContent editor={editor} />
+            </div>
           </div>
         </div>
       </div>

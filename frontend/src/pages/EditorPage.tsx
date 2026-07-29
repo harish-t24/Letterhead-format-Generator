@@ -200,7 +200,7 @@ export function EditorPage() {
               </div>
             </div>
 
-            <div style={{ background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', padding: 20, minHeight: 200, display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <div style={{ padding: '16px 0', minHeight: 200, display: 'flex', flexDirection: 'column', gap: 16, width: '100%', alignItems: 'center' }}>
               {previewMode === 'single' ? (
                 <PdfPreview pdfUrl={pdfUrl} />
               ) : (

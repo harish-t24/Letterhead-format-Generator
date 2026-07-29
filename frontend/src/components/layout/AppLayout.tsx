@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
+import logo from '../../assets/logo.png';
 
 const NAV_ITEMS = [
   { to: '/', label: 'Dashboard', icon: '📊', end: true },
@@ -34,9 +35,19 @@ export function AppLayout() {
           overflow: 'hidden',
         }}
       >
-        <div className="sidebar-logo">
-          <span>✨</span>
-          {!collapsed && <span style={{ fontWeight: 800 }}>ShineCraft</span>}
+        <div className="sidebar-logo" style={{ display: 'flex', alignItems: 'center', gap: 10, padding: collapsed ? '16px 12px' : '16px 18px' }}>
+          <img
+            src={logo}
+            alt="Logo"
+            style={{
+              height: 200,
+              maxHeight: 100,
+              maxWidth: collapsed ? 36 : 140,
+              objectFit: 'contain',
+              borderRadius: 4,
+            }}
+          />
+          
         </div>
 
         <nav style={{ flex: 1, padding: 12 }}>
@@ -83,7 +94,7 @@ export function AppLayout() {
             position: 'relative',
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <button
               onClick={() => setCollapsed((c) => !c)}
               title="Toggle sidebar"

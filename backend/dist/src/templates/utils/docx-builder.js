@@ -5,27 +5,74 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.buildDocx = buildDocx;
 const html_to_docx_1 = __importDefault(require("html-to-docx"));
+const pizzip_1 = __importDefault(require("pizzip"));
 function preprocessHtmlTables(html) {
     if (!html)
         return '';
     let processed = html;
     processed = processed.replace(/<table([^>]*)/gi, (match, contents) => {
-        const clean = contents
-            .replace(/\s*border=["'][^"']*["']/gi, '')
-            .replace(/\s*cellspacing=["'][^"']*["']/gi, '')
-            .replace(/\s*cellpadding=["'][^"']*["']/gi, '')
-            .replace(/\s*style=["'][^"']*["']/gi, '');
-        return `<table border="1" cellspacing="0" cellpadding="6" style="border-collapse:collapse; width:100%; border:1px solid #cbd5e1;"${clean}`;
-    });
-    processed = processed.replace(/<td([^>]*)/gi, (match, contents) => {
-        const clean = contents.replace(/\s*style=["'][^"']*["']/gi, '');
-        return `<td style="border:1px solid #cbd5e1; padding:8px 12px; vertical-align:top;"${clean}`;
-    });
-    processed = processed.replace(/<th([^>]*)/gi, (match, contents) => {
-        const clean = contents.replace(/\s*style=["'][^"']*["']/gi, '');
-        return `<th style="border:1px solid #cbd5e1; padding:8px 12px; vertical-align:top; background-color:#f8fafc; font-weight:bold;"${clean}`;
+        if (/style=/i.test(contents)) {
+            return match;
+        }
+        return `<table border="1" cellspacing="0" cellpadding="6" style="border-collapse:collapse; width:100%; border:1px solid #cbd5e1;"${contents}`;
     });
     return processed;
+}
+function makeHeaderFooterXmlMarginless(docxBuffer, marginTopInches, marginBottomInches, marginLeftInches, marginRightInches) {
+    try {
+        const zip = new pizzip_1.default(docxBuffer);
+        const marginTopDxa = Math.round(marginTopInches * 1440);
+        const marginBottomDxa = Math.round(marginBottomInches * 1440);
+        const marginLeftDxa = Math.round(marginLeftInches * 1440);
+        const marginRightDxa = Math.round(marginRightInches * 1440);
+        const fullWidthEmu = 7560310;
+        if (zip.files['word/document.xml']) {
+            let xml = zip.files['word/document.xml'].asText();
+            xml = xml.replace(/<w:pgMar[^>]*\/>/g, '<w:pgMar w:top="0" w:bottom="0" w:left="0" w:right="0" w:header="0" w:footer="0"/>');
+            const indXml = `<w:ind w:left="${marginLeftDxa}" w:right="${marginRightDxa}"/>`;
+            let isFirstPara = true;
+            xml = xml.replace(/<w:p>(.*?)<\/w:p>/gs, (match, pInner) => {
+                let pPr = '';
+                let pContent = pInner;
+                if (pInner.includes('<w:pPr>')) {
+                    const pPrMatch = pInner.match(/<w:pPr>(.*?)<\/w:pPr>/s);
+                    if (pPrMatch) {
+                        pPr = pPrMatch[1];
+                        pContent = pInner.replace(/<w:pPr>.*?<\/w:pPr>/s, '');
+                    }
+                }
+                let extraPr = indXml;
+                if (isFirstPara) {
+                    extraPr += `<w:spacing w:before="${marginTopDxa}"/>`;
+                    isFirstPara = false;
+                }
+                return `<w:p><w:pPr>${extraPr}${pPr}</w:pPr>${pContent}</w:p>`;
+            });
+            zip.file('word/document.xml', xml);
+        }
+        const zeroIndentXml = `<w:ind w:left="0" w:right="0" xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"/>`;
+        const fixHfXml = (xmlStr) => {
+            let xml = xmlStr;
+            if (xml.includes('<w:pPr>')) {
+                xml = xml.replace(/<w:pPr>/g, `<w:pPr>${zeroIndentXml}`);
+            }
+            else {
+                xml = xml.replace(/<w:p>/g, `<w:p><w:pPr>${zeroIndentXml}</w:pPr>`);
+            }
+            xml = xml.replace(/cx="\d+"/g, `cx="${fullWidthEmu}"`);
+            return xml;
+        };
+        if (zip.files['word/header1.xml']) {
+            zip.file('word/header1.xml', fixHfXml(zip.files['word/header1.xml'].asText()));
+        }
+        if (zip.files['word/footer1.xml']) {
+            zip.file('word/footer1.xml', fixHfXml(zip.files['word/footer1.xml'].asText()));
+        }
+        return zip.generate({ type: 'nodebuffer' });
+    }
+    catch (e) {
+        return docxBuffer;
+    }
 }
 async function buildDocx(params) {
     const { bodyHtml, headerHtml, footerHtml, includeHeader, includeFooter, marginTop, marginBottom, marginLeft, marginRight } = params;
@@ -34,6 +81,14 @@ async function buildDocx(params) {
     const processedFooter = preprocessHtmlTables(footerHtml);
     const hasImage = footerHtml && /<img/i.test(footerHtml);
     const enablePageNumber = includeFooter && !hasImage && (!footerHtml || /page/i.test(footerHtml));
+    const DEFAULT_TOP = 5.4 / 2.54;
+    const DEFAULT_BOTTOM = 0.63 / 2.54;
+    const DEFAULT_LEFT = 2.16 / 2.54;
+    const DEFAULT_RIGHT = 1.27 / 2.54;
+    const leftMargin = marginLeft !== undefined ? marginLeft : DEFAULT_LEFT;
+    const rightMargin = marginRight !== undefined ? marginRight : DEFAULT_RIGHT;
+    const topMargin = marginTop !== undefined ? marginTop : DEFAULT_TOP;
+    const bottomMargin = marginBottom !== undefined ? marginBottom : DEFAULT_BOTTOM;
     const buffer = await (0, html_to_docx_1.default)(processedBody, includeHeader ? processedHeader || '<p></p>' : undefined, {
         header: includeHeader,
         footer: includeFooter,
@@ -43,16 +98,16 @@ async function buildDocx(params) {
             height: 16838,
         },
         margins: {
-            top: marginTop !== undefined ? Math.round(marginTop * 1440) : 1440,
-            bottom: marginBottom !== undefined ? Math.round(marginBottom * 1440) : 1440,
-            left: marginLeft !== undefined ? Math.round(marginLeft * 1440) : 1440,
-            right: marginRight !== undefined ? Math.round(marginRight * 1440) : 1440,
-            header: 720,
-            footer: 720,
+            top: 0,
+            bottom: 0,
+            left: 0,
+            right: 0,
+            header: 0,
+            footer: 0,
         },
         font: 'Calibri',
         fontSize: 24,
     }, includeFooter ? processedFooter || '<p></p>' : undefined);
-    return buffer;
+    return makeHeaderFooterXmlMarginless(buffer, topMargin, bottomMargin, leftMargin, rightMargin);
 }
 //# sourceMappingURL=docx-builder.js.map

@@ -1,5 +1,6 @@
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
+import { ResizableImage } from './extensions/ResizableImage';
 import { TextStyle } from '@tiptap/extension-text-style';
 import FontFamily from '@tiptap/extension-font-family';
 import { Color } from '@tiptap/extension-color';
@@ -38,6 +39,7 @@ export function TemplateEditor({ html, editable = false }: Props) {
       Subscript,
       Superscript,
       PageBreak,
+      ResizableImage,
       Table.configure({
         HTMLAttributes: {
           class: 'editor-table',

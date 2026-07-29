@@ -23,8 +23,8 @@ interface Props {
 
 export function NewTemplateDialog({ onClose, onCreate, onImport, creating, importing }: Props) {
   const [starters, setStarters] = useState<StarterOption[]>([]);
-  const [selected, setSelected] = useState<Choice | null>(null);
-  const [name, setName] = useState('');
+  const [selected, setSelected] = useState<Choice | null>('shinecraft');
+  const [name, setName] = useState('My Letterhead Template');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {

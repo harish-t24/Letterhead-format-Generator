@@ -1,3 +1,4 @@
+import { useRef } from 'react';
 import type { Editor } from '@tiptap/core';
 
 interface Props {
@@ -31,7 +32,24 @@ const groupStyle: React.CSSProperties = {
  * or editable here, only in the rendered Preview.
  */
 export function EditorToolbar({ editor }: Props) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   if (!editor) return null;
+
+  const handleImageFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file && editor) {
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const base64 = ev.target?.result as string;
+        if (base64) {
+          (editor.chain().focus() as any).setImage({ src: base64, alt: file.name }).run();
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+    e.target.value = '';
+  };
 
   return (
     <div
@@ -193,7 +211,7 @@ export function EditorToolbar({ editor }: Props) {
         </button>
       </div>
 
-      {/* Insert Table Button (Always Visible) */}
+      {/* Insert Table & Image Buttons */}
       <div style={groupStyle}>
         <button
           type="button"
@@ -203,6 +221,21 @@ export function EditorToolbar({ editor }: Props) {
         >
           📅 Table
         </button>
+        <button
+          type="button"
+          style={btnStyle(false)}
+          onClick={() => fileInputRef.current?.click()}
+          title="Insert Image (Upload image file or paste directly into editor)"
+        >
+          🖼️ Image
+        </button>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          hidden
+          onChange={handleImageFileChange}
+        />
       </div>
 
       {/* Table Editing Tools (Visible only when inside a table) */}

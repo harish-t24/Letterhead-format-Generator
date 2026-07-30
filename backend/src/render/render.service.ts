@@ -17,21 +17,54 @@ import Docxtemplater from 'docxtemplater';
 export class RenderService {
   private readonly logger = new Logger(RenderService.name);
 
+  private sanitizeDocxBraces(docxBuffer: Buffer): Buffer {
+    try {
+      const zip = new PizZip(docxBuffer);
+      const files = [
+        'word/document.xml',
+        'word/header1.xml',
+        'word/header2.xml',
+        'word/header3.xml',
+        'word/footer1.xml',
+        'word/footer2.xml',
+        'word/footer3.xml',
+      ];
+
+      for (const fileName of files) {
+        if (!zip.files[fileName]) continue;
+        let xml = zip.files[fileName].asText();
+
+        // Fix typos like {placeholder) -> {placeholder}
+        xml = xml.replace(/\{([a-zA-Z0-9_]+)\)/g, '{$1}');
+
+        // Escape any '{' that is NOT part of a valid complete placeholder tag {name}
+        xml = xml.replace(/\{(?![a-zA-Z0-9_]+\})/g, '&#123;');
+
+        zip.file(fileName, xml);
+      }
+
+      return zip.generate({ type: 'nodebuffer' }) as Buffer;
+    } catch (e) {
+      return docxBuffer;
+    }
+  }
+
   merge(templateDocxBuffer: Buffer, rowData: Record<string, string>): Buffer {
-    const zip = new PizZip(templateDocxBuffer);
+    const cleanDocx = this.sanitizeDocxBraces(templateDocxBuffer);
+    const zip = new PizZip(cleanDocx);
 
     const doc = new Docxtemplater(zip, {
       paragraphLoop: true,
       linebreaks: true,
       delimiters: { start: '{', end: '}' },
+      nullGetter() {
+        return '';
+      },
     });
 
     try {
-      doc.render(rowData);
+      doc.render(rowData || {});
     } catch (error: any) {
-      // docxtemplater throws a structured error listing exactly which
-      // placeholder(s) had no matching data - surface that clearly
-      // instead of a generic 500.
       const details =
         error?.properties?.errors
           ?.map((e: any) => e?.properties?.explanation)

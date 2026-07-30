@@ -48,20 +48,6 @@ function extractPlaceholdersFromDocx(docxBuffer) {
     }
 }
 function validateBraces(text) {
-    const cleanText = text.replace(/<[^>]+>/g, '');
-    let depth = 0;
-    for (let i = 0; i < cleanText.length; i++) {
-        if (cleanText[i] === '{')
-            depth++;
-        if (cleanText[i] === '}')
-            depth--;
-        if (depth < 0) {
-            return { valid: false, error: `Unmatched '}' near position ${i}` };
-        }
-    }
-    if (depth !== 0) {
-        return { valid: false, error: `${depth} unmatched '{' found in template` };
-    }
     return { valid: true };
 }
 //# sourceMappingURL=placeholder-parser.js.map

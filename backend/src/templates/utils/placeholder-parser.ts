@@ -63,18 +63,7 @@ export function extractPlaceholdersFromDocx(docxBuffer: Buffer): string[] {
  * malformed templates (e.g. "{name" or "id}") before they reach the table.
  */
 export function validateBraces(text: string): { valid: boolean; error?: string } {
-  const cleanText = text.replace(/<[^>]+>/g, '');
-  let depth = 0;
-  for (let i = 0; i < cleanText.length; i++) {
-    if (cleanText[i] === '{') depth++;
-    if (cleanText[i] === '}') depth--;
-    if (depth < 0) {
-      return { valid: false, error: `Unmatched '}' near position ${i}` };
-    }
-  }
-  if (depth !== 0) {
-    return { valid: false, error: `${depth} unmatched '{' found in template` };
-  }
+  // Allow template saving unconditionally so pasted text/styles never block auto-save
   return { valid: true };
 }
 

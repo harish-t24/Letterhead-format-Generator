@@ -30,23 +30,16 @@ function makeHeaderFooterXmlMarginless(docxBuffer, marginTopInches, marginBottom
             let xml = zip.files['word/document.xml'].asText();
             xml = xml.replace(/<w:pgMar[^>]*\/>/g, '<w:pgMar w:top="0" w:bottom="0" w:left="0" w:right="0" w:header="0" w:footer="0"/>');
             const indXml = `<w:ind w:left="${marginLeftDxa}" w:right="${marginRightDxa}"/>`;
-            let isFirstPara = true;
-            xml = xml.replace(/<w:p>(.*?)<\/w:p>/gs, (match, pInner) => {
-                let pPr = '';
-                let pContent = pInner;
-                if (pInner.includes('<w:pPr>')) {
-                    const pPrMatch = pInner.match(/<w:pPr>(.*?)<\/w:pPr>/s);
-                    if (pPrMatch) {
-                        pPr = pPrMatch[1];
-                        pContent = pInner.replace(/<w:pPr>.*?<\/w:pPr>/s, '');
-                    }
+            const topSpacingXml = `<w:spacing w:before="${marginTopDxa}"/>`;
+            xml = xml.replace(/<w:pPr>/g, `<w:pPr>${indXml}`);
+            xml = xml.replace(/<w:p>(?!<w:pPr>)/g, `<w:p><w:pPr>${indXml}</w:pPr>`);
+            let firstDone = false;
+            xml = xml.replace(/<w:pPr>/g, (m) => {
+                if (!firstDone) {
+                    firstDone = true;
+                    return `<w:pPr>${topSpacingXml}`;
                 }
-                let extraPr = indXml;
-                if (isFirstPara) {
-                    extraPr += `<w:spacing w:before="${marginTopDxa}"/>`;
-                    isFirstPara = false;
-                }
-                return `<w:p><w:pPr>${extraPr}${pPr}</w:pPr>${pContent}</w:p>`;
+                return m;
             });
             zip.file('word/document.xml', xml);
         }

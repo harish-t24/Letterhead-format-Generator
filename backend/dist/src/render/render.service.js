@@ -16,15 +16,45 @@ const pizzip_1 = __importDefault(require("pizzip"));
 const docxtemplater_1 = __importDefault(require("docxtemplater"));
 let RenderService = RenderService_1 = class RenderService {
     logger = new common_1.Logger(RenderService_1.name);
+    sanitizeDocxBraces(docxBuffer) {
+        try {
+            const zip = new pizzip_1.default(docxBuffer);
+            const files = [
+                'word/document.xml',
+                'word/header1.xml',
+                'word/header2.xml',
+                'word/header3.xml',
+                'word/footer1.xml',
+                'word/footer2.xml',
+                'word/footer3.xml',
+            ];
+            for (const fileName of files) {
+                if (!zip.files[fileName])
+                    continue;
+                let xml = zip.files[fileName].asText();
+                xml = xml.replace(/\{([a-zA-Z0-9_]+)\)/g, '{$1}');
+                xml = xml.replace(/\{(?![a-zA-Z0-9_]+\})/g, '&#123;');
+                zip.file(fileName, xml);
+            }
+            return zip.generate({ type: 'nodebuffer' });
+        }
+        catch (e) {
+            return docxBuffer;
+        }
+    }
     merge(templateDocxBuffer, rowData) {
-        const zip = new pizzip_1.default(templateDocxBuffer);
+        const cleanDocx = this.sanitizeDocxBraces(templateDocxBuffer);
+        const zip = new pizzip_1.default(cleanDocx);
         const doc = new docxtemplater_1.default(zip, {
             paragraphLoop: true,
             linebreaks: true,
             delimiters: { start: '{', end: '}' },
+            nullGetter() {
+                return '';
+            },
         });
         try {
-            doc.render(rowData);
+            doc.render(rowData || {});
         }
         catch (error) {
             const details = error?.properties?.errors

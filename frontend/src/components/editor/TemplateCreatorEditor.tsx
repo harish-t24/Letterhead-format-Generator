@@ -17,12 +17,74 @@ import { useEffect, useImperativeHandle, forwardRef } from 'react';
 import { EditorToolbar } from './EditorToolbar';
 import { PageBreak } from './PageBreak';
 
+import Bold from '@tiptap/extension-bold';
+
+export const CustomBold = Bold.extend({
+  parseHTML() {
+    return [
+      { tag: 'strong' },
+      { tag: 'b', getAttrs: (node) => (node as HTMLElement).style?.fontWeight !== 'normal' && null },
+      {
+        style: 'font-weight',
+        getAttrs: (value) => /^(bold|bolder|[5-9]\d{2})$/i.test(value as string) && null,
+      },
+    ];
+  },
+});
+
+export const LineHeight = Extension.create({
+  name: 'lineHeight',
+
+  addOptions() {
+    return {
+      types: ['paragraph', 'heading', 'listItem', 'textStyle'],
+    };
+  },
+
+  addGlobalAttributes() {
+    return [
+      {
+        types: this.options.types,
+        attributes: {
+          lineHeight: {
+            default: null,
+            parseHTML: (element) => element.style.lineHeight || null,
+            renderHTML: (attributes) => {
+              if (!attributes.lineHeight) {
+                return {};
+              }
+              return {
+                style: `line-height: ${attributes.lineHeight}`,
+              };
+            },
+          },
+        },
+      },
+    ];
+  },
+
+  addCommands(): any {
+    return {
+      setLineHeight: (lineHeight: string) => ({ chain }: any) => {
+        return chain()
+          .setNode('paragraph', { lineHeight })
+          .run();
+      },
+      unsetLineHeight: () => ({ chain }: any) => {
+        return chain()
+          .setNode('paragraph', { lineHeight: null })
+          .run();
+      },
+    };
+  },
+});
+
 export const FontSize = Extension.create({
   name: 'fontSize',
 
   addOptions() {
     return {
-      types: ['textStyle'],
+      types: ['textStyle', 'paragraph', 'heading'],
     };
   },
 
@@ -33,7 +95,7 @@ export const FontSize = Extension.create({
         attributes: {
           fontSize: {
             default: null,
-            parseHTML: (element) => element.style.fontSize,
+            parseHTML: (element) => element.style.fontSize || element.getAttribute('size') || null,
             renderHTML: (attributes) => {
               if (!attributes.fontSize) {
                 return {};
@@ -111,6 +173,75 @@ export const HighlightStyle = Extension.create({
   },
 });
 
+export const CustomTableCell = TableCell.extend({
+  addAttributes() {
+    return {
+      ...this.parent?.(),
+      style: {
+        default: null,
+        parseHTML: (element) => element.getAttribute('style'),
+        renderHTML: (attributes) => {
+          if (!attributes.style) return {};
+          return { style: attributes.style };
+        },
+      },
+    };
+  },
+});
+
+export const CustomTableHeader = TableHeader.extend({
+  addAttributes() {
+    return {
+      ...this.parent?.(),
+      style: {
+        default: null,
+        parseHTML: (element) => element.getAttribute('style'),
+        renderHTML: (attributes) => {
+          if (!attributes.style) return {};
+          return { style: attributes.style };
+        },
+      },
+    };
+  },
+});
+
+export const CustomTable = Table.extend({
+  addAttributes() {
+    return {
+      ...this.parent?.(),
+      style: {
+        default: null,
+        parseHTML: (element) => element.getAttribute('style'),
+        renderHTML: (attributes) => {
+          if (!attributes.style) return {};
+          return { style: attributes.style };
+        },
+      },
+    };
+  },
+});
+
+export const CustomStyleExtension = Extension.create({
+  name: 'customStyleExtension',
+  addGlobalAttributes() {
+    return [
+      {
+        types: ['textStyle', 'paragraph', 'heading', 'listItem'],
+        attributes: {
+          style: {
+            default: null,
+            parseHTML: (element) => element.getAttribute('style'),
+            renderHTML: (attributes) => {
+              if (!attributes.style) return {};
+              return { style: attributes.style };
+            },
+          },
+        },
+      },
+    ];
+  },
+});
+
 export interface TemplateCreatorEditorHandle {
   getHTML: () => string;
   /** Inserts `{name}` at the current cursor position (click-to-insert
@@ -140,36 +271,36 @@ interface Props {
  * Word's page body is what you type in while the header/footer stay
  * fixed at the top/bottom of the printed page.
  *
- * Paste handling is left to TipTap/ProseMirror's default HTML parsing
- * (no custom paste rules), which is what preserves bullet/numbered
- * lists and inline formatting when pasting from Word/Google Docs/etc.
- * StarterKit's List/Bold/Italic nodes are exactly what those pasted
- * HTML tags (<ul>, <ol>, <strong>, <em>) map onto.
+ * Paste handling preserves exact source formatting (text fonts, colors,
+ * highlight backgrounds, tables, borders, cell padding, and images).
  */
 export const TemplateCreatorEditor = forwardRef<TemplateCreatorEditorHandle, Props>(
   ({ initialHtml, headerHtml, footerHtml, marginTop = 5.4 / 2.54, marginBottom = 0.63 / 2.54, marginLeft = 2.16 / 2.54, marginRight = 1.27 / 2.54, onChange }, ref) => {
     const editor = useEditor({
       extensions: [
-        StarterKit,
+        StarterKit.configure({ bold: false }),
+        CustomBold,
         Underline,
         TextStyle,
         FontFamily,
         Color,
         FontSize,
+        LineHeight,
         HighlightStyle,
         Subscript,
         Superscript,
         PageBreak,
         ResizableImage,
+        CustomStyleExtension,
         TextAlign.configure({ types: ['heading', 'paragraph'] }),
-        Table.configure({
+        CustomTable.configure({
           HTMLAttributes: {
             class: 'editor-table',
           },
         }),
         TableRow,
-        TableHeader,
-        TableCell,
+        CustomTableHeader,
+        CustomTableCell,
       ],
       content: initialHtml,
       editable: true,
@@ -178,7 +309,46 @@ export const TemplateCreatorEditor = forwardRef<TemplateCreatorEditorHandle, Pro
       },
       editorProps: {
         transformPastedHTML: (html) => {
-          return html;
+          if (!html) return '';
+
+          let cleaned = html;
+
+          // 1. Clean MSO conditional comments from MS Word
+          cleaned = cleaned.replace(/<!--\[if[\s\S]*?<!\[endif\]-->/gi, '');
+
+          // 2. Convert bold style spans/b tags to <strong> tags so ProseMirror registers bold
+          cleaned = cleaned.replace(/<span([^>]*?style=["'][^"']*font-weight\s*:\s*(bold|[5-9]\d{2})[^"']*["'][^>]*)>(.*?)<\/span>/gi, '<strong>$3</strong>');
+          cleaned = cleaned.replace(/<b\b([^>]*)>(.*?)<\/b>/gi, '<strong>$2</strong>');
+
+          // 3. Convert <font face="..." color="..." size="..."> to <span style="...">
+          cleaned = cleaned.replace(/<font([^>]*?)>(.*?)<\/font>/gi, (_match, attrs, inner) => {
+            const faceMatch = attrs.match(/face=["']([^"']+)["']/i);
+            const colorMatch = attrs.match(/color=["']([^"']+)["']/i);
+            const sizeMatch = attrs.match(/size=["']([^"']+)["']/i);
+
+            const styles: string[] = [];
+            if (faceMatch) styles.push(`font-family: ${faceMatch[1]}`);
+            if (colorMatch) styles.push(`color: ${colorMatch[1]}`);
+            if (sizeMatch) {
+              const sizeMap: Record<string, string> = {
+                '1': '10px',
+                '2': '13px',
+                '3': '16px',
+                '4': '18px',
+                '5': '24px',
+                '6': '32px',
+                '7': '48px',
+              };
+              styles.push(`font-size: ${sizeMap[sizeMatch[1]] || '16px'}`);
+            }
+
+            if (styles.length > 0) {
+              return `<span style="${styles.join('; ')}">${inner}</span>`;
+            }
+            return inner;
+          });
+
+          return cleaned;
         },
         handlePaste: (view, event) => {
           const items = Array.from(event.clipboardData?.items || []);

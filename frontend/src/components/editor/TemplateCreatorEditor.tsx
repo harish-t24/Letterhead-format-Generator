@@ -438,7 +438,7 @@ export const TemplateCreatorEditor = forwardRef<TemplateCreatorEditorHandle, Pro
 
     return (
       <div style={{ position: 'relative', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)' }}>
-        <div style={{ position: 'sticky', top: 0, zIndex: 10, background: 'var(--bg-surface)', borderBottom: '1px solid var(--border-color)' }}>
+        <div style={{ position: 'sticky', top: 70, zIndex: 90, background: 'var(--bg-surface)', borderBottom: '1px solid var(--border-color)', boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)' }}>
           <EditorToolbar editor={editor} />
         </div>
         <div className="editor-desk" style={{ position: 'relative' }}>

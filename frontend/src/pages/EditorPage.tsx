@@ -161,6 +161,15 @@ export function EditorPage() {
                 marginBottom: 20,
                 flexWrap: 'wrap',
                 gap: 12,
+                position: 'sticky',
+                top: 0,
+                zIndex: 100,
+                background: 'var(--bg-surface)',
+                backdropFilter: 'blur(8px)',
+                paddingTop: 12,
+                paddingBottom: 12,
+                borderBottom: '1px solid var(--border-color)',
+                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.04)',
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>

@@ -68,9 +68,38 @@ export function EditorToolbar({ editor }: Props) {
     >
       <div style={groupStyle}>
         <select
-          onChange={(e) => editor.chain().focus().setFontFamily(e.target.value).run()}
+          onChange={(e) => {
+            const val = e.target.value;
+            if (val === 'p') editor.chain().focus().setParagraph().run();
+            else if (val === 'h1') editor.chain().focus().toggleHeading({ level: 1 }).run();
+            else if (val === 'h2') editor.chain().focus().toggleHeading({ level: 2 }).run();
+            else if (val === 'h3') editor.chain().focus().toggleHeading({ level: 3 }).run();
+          }}
+          value={
+            editor.isActive('heading', { level: 1 }) ? 'h1' :
+            editor.isActive('heading', { level: 2 }) ? 'h2' :
+            editor.isActive('heading', { level: 3 }) ? 'h3' : 'p'
+          }
+          style={{ fontSize: 12, padding: '3px 4px', border: '1px solid #d1d5db', borderRadius: 4, width: 105 }}
+          title="Text Styles (Normal, Headings)"
+        >
+          <option value="p">Normal text</option>
+          <option value="h1">Heading 1</option>
+          <option value="h2">Heading 2</option>
+          <option value="h3">Heading 3</option>
+        </select>
+        <select
+          onChange={(e) => {
+            const val = e.target.value;
+            if (!val) {
+              editor.chain().focus().unsetFontFamily().run();
+            } else {
+              editor.chain().focus().setFontFamily(val).run();
+            }
+          }}
           defaultValue=""
-          style={{ fontSize: 12, padding: '3px 4px', border: '1px solid #d1d5db', borderRadius: 4, width: 100 }}
+          style={{ fontSize: 12, padding: '3px 4px', border: '1px solid #d1d5db', borderRadius: 4, width: 95 }}
+          title="Font Family (Select Font to reset)"
         >
           <option value="">Font</option>
           <option value="Arial">Arial</option>
@@ -78,19 +107,31 @@ export function EditorToolbar({ editor }: Props) {
           <option value="Calibri">Calibri</option>
           <option value="'Courier New'">Courier New</option>
           <option value="'Times New Roman'">Times New Roman</option>
+          <option value="'Outfit'">Outfit</option>
         </select>
         <select
-          onChange={(e) => editor.chain().focus().setFontSize(e.target.value).run()}
+          onChange={(e) => {
+            const val = e.target.value;
+            if (!val) {
+              (editor.chain().focus() as any).unsetFontSize().run();
+            } else {
+              (editor.chain().focus() as any).setFontSize(val).run();
+            }
+          }}
           defaultValue=""
-          style={{ fontSize: 12, padding: '3px 4px', border: '1px solid #d1d5db', borderRadius: 4, width: 60 }}
+          style={{ fontSize: 12, padding: '3px 4px', border: '1px solid #d1d5db', borderRadius: 4, width: 55 }}
+          title="Font Size (Select Size to reset)"
         >
           <option value="">Size</option>
           <option value="10px">10</option>
+          <option value="11px">11</option>
           <option value="12px">12</option>
           <option value="14px">14</option>
           <option value="16px">16</option>
           <option value="18px">18</option>
+          <option value="20px">20</option>
           <option value="24px">24</option>
+          <option value="32px">32</option>
         </select>
       </div>
 
@@ -201,14 +242,6 @@ export function EditorToolbar({ editor }: Props) {
           title="Insert Page Break"
         >
           📄 Page Break
-        </button>
-        <button
-          type="button"
-          style={btnStyle(false)}
-          onClick={() => (editor as any).commands.deleteNode('pageBreak')}
-          title="Remove Page Break"
-        >
-          ❌ Remove Break
         </button>
       </div>
 
@@ -338,32 +371,32 @@ export function EditorToolbar({ editor }: Props) {
         <button
           type="button"
           style={btnStyle(editor.isActive({ textAlign: 'left' }))}
-          onClick={() => editor.chain().focus().setTextAlign('left').run()}
-          title="Align left"
+          onClick={() => editor.isActive({ textAlign: 'left' }) ? (editor.chain().focus() as any).unsetTextAlign().run() : editor.chain().focus().setTextAlign('left').run()}
+          title="Align left (Click again to reset)"
         >
           ⟸
         </button>
         <button
           type="button"
           style={btnStyle(editor.isActive({ textAlign: 'center' }))}
-          onClick={() => editor.chain().focus().setTextAlign('center').run()}
-          title="Align center"
+          onClick={() => editor.isActive({ textAlign: 'center' }) ? (editor.chain().focus() as any).unsetTextAlign().run() : editor.chain().focus().setTextAlign('center').run()}
+          title="Align center (Click again to reset)"
         >
           ⟺
         </button>
         <button
           type="button"
           style={btnStyle(editor.isActive({ textAlign: 'right' }))}
-          onClick={() => editor.chain().focus().setTextAlign('right').run()}
-          title="Align right"
+          onClick={() => editor.isActive({ textAlign: 'right' }) ? (editor.chain().focus() as any).unsetTextAlign().run() : editor.chain().focus().setTextAlign('right').run()}
+          title="Align right (Click again to reset)"
         >
           ⟹
         </button>
         <button
           type="button"
           style={btnStyle(editor.isActive({ textAlign: 'justify' }))}
-          onClick={() => editor.chain().focus().setTextAlign('justify').run()}
-          title="Justify"
+          onClick={() => editor.isActive({ textAlign: 'justify' }) ? (editor.chain().focus() as any).unsetTextAlign().run() : editor.chain().focus().setTextAlign('justify').run()}
+          title="Justify (Click again to reset)"
         >
           ☰
         </button>

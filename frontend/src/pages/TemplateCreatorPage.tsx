@@ -423,12 +423,7 @@ export function TemplateCreatorPage() {
         </div>
 
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-          <button onClick={() => editorRef.current?.insertSeal()} style={outlineBtn} title="Put Seal image (Round seal.png) at cursor">
-            🏵️ Put Seal
-          </button>
-          <button onClick={() => editorRef.current?.insertSign()} style={outlineBtn} title="Place Sign image (sign.PNG) at cursor">
-            ✍️ Place Sign
-          </button>
+        
           <button onClick={handleDownloadPdf} style={outlineBtn}>
             📥 Download PDF
           </button>

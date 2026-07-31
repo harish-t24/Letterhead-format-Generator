@@ -369,7 +369,23 @@ export function TemplateCreatorPage() {
         </Link>
       </div>
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24, flexWrap: 'wrap', gap: 16 }}>
+      <div style={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 24,
+        flexWrap: 'wrap',
+        gap: 16,
+        position: 'sticky',
+        top: 0,
+        zIndex: 100,
+        background: 'var(--bg-primary)',
+        backdropFilter: 'blur(8px)',
+        paddingTop: 12,
+        paddingBottom: 16,
+        borderBottom: '1px solid var(--border-color)',
+        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.04)',
+      }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
           <span style={{ color: 'var(--text-muted)', fontSize: 14, fontWeight: 500 }}>Template —</span>
           <input
@@ -406,7 +422,13 @@ export function TemplateCreatorPage() {
           />
         </div>
 
-        <div style={{ display: 'flex', gap: 10 }}>
+        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+          <button onClick={() => editorRef.current?.insertSeal()} style={outlineBtn} title="Put Seal image (Round seal.png) at cursor">
+            🏵️ Put Seal
+          </button>
+          <button onClick={() => editorRef.current?.insertSign()} style={outlineBtn} title="Place Sign image (sign.PNG) at cursor">
+            ✍️ Place Sign
+          </button>
           <button onClick={handleDownloadPdf} style={outlineBtn}>
             📥 Download PDF
           </button>
@@ -421,7 +443,7 @@ export function TemplateCreatorPage() {
 
       <div style={{ display: 'flex', gap: 28, alignItems: 'flex-start' }}>
         {!showPreview && (
-          <div className="app-card" style={{ padding: 20, position: 'sticky', top: 20, alignSelf: 'flex-start' }}>
+          <div className="app-card" style={{ padding: 20, position: 'sticky', top: 90, alignSelf: 'flex-start' }}>
             <PlaceholdersPanel
               placeholders={template.placeholders}
               onInsert={(name) => editorRef.current?.insertPlaceholder(name)}

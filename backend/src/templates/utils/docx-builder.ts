@@ -96,6 +96,14 @@ function makeHeaderFooterXmlMarginless(
   }
 }
 
+function sanitizeHtmlForDocx(html?: string): string {
+  if (!html) return '';
+  let cleaned = html;
+  // Remove data:image/svg+xml or unsupported image data URIs that break html-to-docx
+  cleaned = cleaned.replace(/<img[^>]*src=["']data:image\/(?!png|jpeg|jpg|gif)[^"']*["'][^>]*>/gi, '');
+  return cleaned;
+}
+
 export async function buildDocx(params: {
   bodyHtml: string;
   headerHtml?: string;
@@ -110,9 +118,9 @@ export async function buildDocx(params: {
 }): Promise<Buffer> {
   const { bodyHtml, headerHtml, footerHtml, includeHeader, includeFooter, marginTop, marginBottom, marginLeft, marginRight } = params;
 
-  const processedBody = preprocessHtmlTables(bodyHtml);
-  const processedHeader = preprocessHtmlTables(headerHtml);
-  const processedFooter = preprocessHtmlTables(footerHtml);
+  const processedBody = sanitizeHtmlForDocx(preprocessHtmlTables(bodyHtml));
+  const processedHeader = sanitizeHtmlForDocx(preprocessHtmlTables(headerHtml));
+  const processedFooter = sanitizeHtmlForDocx(preprocessHtmlTables(footerHtml));
 
   const hasImage = footerHtml && /<img/i.test(footerHtml);
   const enablePageNumber = includeFooter && !hasImage && (!footerHtml || /page/i.test(footerHtml));

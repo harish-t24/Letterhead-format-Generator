@@ -67,11 +67,18 @@ function makeHeaderFooterXmlMarginless(docxBuffer, marginTopInches, marginBottom
         return docxBuffer;
     }
 }
+function sanitizeHtmlForDocx(html) {
+    if (!html)
+        return '';
+    let cleaned = html;
+    cleaned = cleaned.replace(/<img[^>]*src=["']data:image\/(?!png|jpeg|jpg|gif)[^"']*["'][^>]*>/gi, '');
+    return cleaned;
+}
 async function buildDocx(params) {
     const { bodyHtml, headerHtml, footerHtml, includeHeader, includeFooter, marginTop, marginBottom, marginLeft, marginRight } = params;
-    const processedBody = preprocessHtmlTables(bodyHtml);
-    const processedHeader = preprocessHtmlTables(headerHtml);
-    const processedFooter = preprocessHtmlTables(footerHtml);
+    const processedBody = sanitizeHtmlForDocx(preprocessHtmlTables(bodyHtml));
+    const processedHeader = sanitizeHtmlForDocx(preprocessHtmlTables(headerHtml));
+    const processedFooter = sanitizeHtmlForDocx(preprocessHtmlTables(footerHtml));
     const hasImage = footerHtml && /<img/i.test(footerHtml);
     const enablePageNumber = includeFooter && !hasImage && (!footerHtml || /page/i.test(footerHtml));
     const DEFAULT_TOP = 5.4 / 2.54;

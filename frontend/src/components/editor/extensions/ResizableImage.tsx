@@ -194,8 +194,10 @@ function ResizableImageComponent(props: any) {
             width: '100%',
             height: 'auto',
             display: 'block',
-            borderRadius: 4,
-            boxShadow: 'var(--shadow-sm)',
+            border: 'none',
+            outline: 'none',
+            background: 'transparent',
+            boxShadow: 'none',
             pointerEvents: 'auto',
             mixBlendMode: textWrap === 'behind' ? 'multiply' : 'normal',
           }}

@@ -1,5 +1,6 @@
 import { useRef } from 'react';
 import type { Editor } from '@tiptap/core';
+import { DEFAULT_SEAL_PNG, DEFAULT_SIGN_PNG } from '../../assets/default-seal-sign';
 
 interface Props {
   editor: Editor | null;
@@ -228,6 +229,22 @@ export function EditorToolbar({ editor }: Props) {
           title="Insert Image (Upload image file or paste directly into editor)"
         >
           🖼️ Image
+        </button>
+        <button
+          type="button"
+          style={btnStyle(false)}
+          onClick={() => (editor.chain().focus() as any).setImage({ src: DEFAULT_SEAL_PNG, alt: 'Official Seal' }).run()}
+          title="Put Official Seal Image at cursor"
+        >
+          🏵️ Put Seal
+        </button>
+        <button
+          type="button"
+          style={btnStyle(false)}
+          onClick={() => (editor.chain().focus() as any).setImage({ src: DEFAULT_SIGN_PNG, alt: 'Authorized Signatory' }).run()}
+          title="Place Signature Image at cursor"
+        >
+          ✍️ Place Sign
         </button>
         <input
           ref={fileInputRef}

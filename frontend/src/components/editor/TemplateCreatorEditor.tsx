@@ -16,6 +16,7 @@ import { Extension } from '@tiptap/core';
 import { useEffect, useImperativeHandle, forwardRef } from 'react';
 import { EditorToolbar } from './EditorToolbar';
 import { PageBreak } from './PageBreak';
+import { DEFAULT_SEAL_PNG, DEFAULT_SIGN_PNG } from '../../assets/default-seal-sign';
 
 import Bold from '@tiptap/extension-bold';
 
@@ -247,6 +248,8 @@ export interface TemplateCreatorEditorHandle {
   /** Inserts `{name}` at the current cursor position (click-to-insert
    *  from the Placeholders panel). */
   insertPlaceholder: (name: string) => void;
+  insertSeal: () => void;
+  insertSign: () => void;
 }
 
 interface Props {
@@ -411,6 +414,14 @@ export const TemplateCreatorEditor = forwardRef<TemplateCreatorEditorHandle, Pro
       getHTML: () => editor?.getHTML() ?? '',
       insertPlaceholder: (name: string) => {
         editor?.chain().focus().insertContent(`{${name}}`).run();
+      },
+      insertSeal: () => {
+        if (!editor) return;
+        (editor.chain().focus() as any).setImage({ src: DEFAULT_SEAL_PNG, alt: 'Official Seal' }).run();
+      },
+      insertSign: () => {
+        if (!editor) return;
+        (editor.chain().focus() as any).setImage({ src: DEFAULT_SIGN_PNG, alt: 'Authorized Signatory' }).run();
       },
     }));
 

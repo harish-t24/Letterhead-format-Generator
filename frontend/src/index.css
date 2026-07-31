@@ -839,6 +839,19 @@ div.page-break::after {
   box-shadow: none !important;
 }
 
+/* Ensure transparent PNG images (seals, stamps, signatures, logos) render without separate background or border boxes */
+.ProseMirror img,
+.template-editor img,
+.template-creator-editor img,
+.a4-page img,
+.editor-desk img {
+  border: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  outline: none !important;
+}
+
 
 
 

@@ -32,6 +32,67 @@ export function DataTable({
   onDeleteRow,
 }: Props) {
   const [editingCell, setEditingCell] = useState<{ rowId: string; col: string } | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(null);
+
+  // Search filtering
+  const searchedRows = useMemo(() => {
+    if (!searchQuery.trim()) return rows;
+    const q = searchQuery.toLowerCase().trim();
+    return rows.filter((r) => {
+      return (
+        Object.values(r.data).some((val) =>
+          String(val ?? '').toLowerCase().includes(q)
+        ) || r.id.toLowerCase().includes(q)
+      );
+    });
+  }, [rows, searchQuery]);
+
+  // Sort feature
+  const displayRows = useMemo(() => {
+    if (!sortConfig) return searchedRows;
+    const { key, direction } = sortConfig;
+
+    return [...searchedRows].sort((a, b) => {
+      let valA: any;
+      let valB: any;
+
+      if (key === 'rowId') {
+        valA = a.id;
+        valB = b.id;
+      } else if (key === 'createdAt') {
+        valA = new Date(a.createdAt).getTime();
+        valB = new Date(b.createdAt).getTime();
+      } else if (key === 'lastUsedAt') {
+        valA = a.lastUsedAt ? new Date(a.lastUsedAt).getTime() : 0;
+        valB = b.lastUsedAt ? new Date(b.lastUsedAt).getTime() : 0;
+      } else {
+        valA = a.data[key] ?? '';
+        valB = b.data[key] ?? '';
+      }
+
+      if (typeof valA === 'string' && typeof valB === 'string') {
+        const cmp = valA.localeCompare(valB, undefined, { numeric: true, sensitivity: 'base' });
+        return direction === 'asc' ? cmp : -cmp;
+      }
+
+      const cmp = valA > valB ? 1 : valA < valB ? -1 : 0;
+      return direction === 'asc' ? cmp : -cmp;
+    });
+  }, [searchedRows, sortConfig]);
+
+  const handleToggleSort = (colId: string) => {
+    if (colId === 'actions') return;
+    setSortConfig((prev) => {
+      if (prev?.key !== colId) {
+        return { key: colId, direction: 'asc' };
+      }
+      if (prev.direction === 'asc') {
+        return { key: colId, direction: 'desc' };
+      }
+      return null;
+    });
+  };
 
   const tableColumns = useMemo(() => {
     const cols = [
@@ -60,8 +121,8 @@ export function DataTable({
               if (!isBackwards) {
                 if (colIndex < columns.length - 1) {
                   setEditingCell({ rowId: row.id, col: columns[colIndex + 1] });
-                } else if (rowIndex < rows.length - 1) {
-                  setEditingCell({ rowId: rows[rowIndex + 1].id, col: columns[0] });
+                } else if (rowIndex < displayRows.length - 1) {
+                  setEditingCell({ rowId: displayRows[rowIndex + 1].id, col: columns[0] });
                 } else {
                   setEditingCell(null);
                 }
@@ -69,7 +130,7 @@ export function DataTable({
                 if (colIndex > 0) {
                   setEditingCell({ rowId: row.id, col: columns[colIndex - 1] });
                 } else if (rowIndex > 0) {
-                  setEditingCell({ rowId: rows[rowIndex - 1].id, col: columns[columns.length - 1] });
+                  setEditingCell({ rowId: displayRows[rowIndex - 1].id, col: columns[columns.length - 1] });
                 } else {
                   setEditingCell(null);
                 }
@@ -166,64 +227,225 @@ export function DataTable({
       }),
     ];
     return cols;
-  }, [columns, rows, editingCell, onCellEdit, onDeleteRow]);
+  }, [columns, displayRows, editingCell, onCellEdit, onDeleteRow]);
 
   const table = useReactTable({
-    data: rows,
+    data: displayRows,
     columns: tableColumns,
     getCoreRowModel: getCoreRowModel(),
   });
 
+  const sortableOptions = ['rowId', ...columns, 'createdAt', 'lastUsedAt'];
+
   return (
-    <table style={{ borderCollapse: 'collapse', width: '100%' }}>
-      <thead>
-        {table.getHeaderGroups().map((hg) => (
-          <tr key={hg.id}>
-            {hg.headers.map((header) => (
-              <th
-                key={header.id}
-                style={{
-                  textAlign: 'left',
-                  padding: '6px 8px',
-                  borderBottom: '2px solid #e5e7eb',
-                  fontSize: 13,
-                  textTransform: 'capitalize',
-                }}
-              >
-                {flexRender(header.column.columnDef.header, header.getContext())}
-              </th>
-            ))}
-          </tr>
-        ))}
-      </thead>
-      <tbody>
-        {table.getRowModel().rows.map((row) => (
-          <tr
-            key={row.id}
-            onClick={() => onSelectRow(row.original.id)}
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      {/* Search Bar & Sort By Controls Toolbar */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 12,
+          flexWrap: 'wrap',
+          background: 'var(--bg-secondary)',
+          padding: '8px 12px',
+          borderRadius: 'var(--radius-sm)',
+          border: '1px solid var(--border-color)',
+        }}
+      >
+        <div style={{ position: 'relative', flex: 1, minWidth: 200 }}>
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="🔍 Search rows..."
             style={{
-              background: row.original.id === activeRowId ? '#eef2ff' : undefined,
+              paddingLeft: 32,
+              paddingRight: searchQuery ? 30 : 12,
+              fontSize: 13,
+              height: 34,
+              border: '1px solid var(--border-color)',
+              borderRadius: 6,
+              background: '#ffffff',
+            }}
+          />
+          {searchQuery && (
+            <button
+              type="button"
+              onClick={() => setSearchQuery('')}
+              style={{
+                position: 'absolute',
+                right: 8,
+                top: '50%',
+                transform: 'translateY(-50%)',
+                border: 'none',
+                background: 'none',
+                color: 'var(--text-muted)',
+                cursor: 'pointer',
+                fontSize: 14,
+                padding: 0,
+              }}
+              title="Clear search"
+            >
+              ✕
+            </button>
+          )}
+        </div>
+
+        {/* Sort By Dropdown Controls */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+          <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)' }}>Sort by:</label>
+          <select
+            value={sortConfig?.key || ''}
+            onChange={(e) => {
+              const key = e.target.value;
+              if (!key) {
+                setSortConfig(null);
+              } else {
+                setSortConfig({ key, direction: sortConfig?.direction || 'asc' });
+              }
+            }}
+            style={{
+              fontSize: 12,
+              padding: '4px 8px',
+              border: '1px solid var(--border-color)',
+              borderRadius: 6,
+              background: '#ffffff',
+              height: 34,
               cursor: 'pointer',
             }}
           >
-            {row.getVisibleCells().map((cell) => (
-              <td
-                key={cell.id}
-                style={{ padding: '6px 8px', borderBottom: '1px solid #f0f0f2', fontSize: 13 }}
-              >
-                {flexRender(cell.column.columnDef.cell, cell.getContext())}
-              </td>
+            <option value="">Default Order</option>
+            {sortableOptions.map((opt) => (
+              <option key={opt} value={opt}>
+                {opt === 'rowId' ? 'Row ID' : opt === 'createdAt' ? 'Created Date' : opt === 'lastUsedAt' ? 'Last Used Date' : opt}
+              </option>
             ))}
-          </tr>
-        ))}
-        {rows.length === 0 && (
-          <tr>
-            <td colSpan={columns.length + 4} style={{ padding: 16, color: '#9ca3af' }}>
-              No rows yet — click "Add Row" to create your first record.
-            </td>
-          </tr>
-        )}
-      </tbody>
-    </table>
+          </select>
+
+          {sortConfig && (
+            <button
+              type="button"
+              onClick={() =>
+                setSortConfig((prev) =>
+                  prev ? { ...prev, direction: prev.direction === 'asc' ? 'desc' : 'asc' } : null
+                )
+              }
+              style={{
+                fontSize: 12,
+                fontWeight: 600,
+                color: 'var(--primary)',
+                border: '1px solid var(--primary-light)',
+                background: '#ffffff',
+                height: 34,
+                padding: '0 10px',
+                borderRadius: 6,
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 4,
+              }}
+              title="Toggle Sort Direction"
+            >
+              {sortConfig.direction === 'asc' ? '▲ Ascending (A-Z)' : '▼ Descending (Z-A)'}
+            </button>
+          )}
+
+          {sortConfig && (
+            <button
+              type="button"
+              onClick={() => setSortConfig(null)}
+              style={{
+                fontSize: 12,
+                color: 'var(--text-muted)',
+                border: 'none',
+                background: 'none',
+                cursor: 'pointer',
+                padding: '4px 6px',
+              }}
+              title="Reset Sorting"
+            >
+              Reset ✕
+            </button>
+          )}
+        </div>
+
+        <div style={{ fontSize: 12, color: 'var(--text-muted)', marginLeft: 'auto', fontWeight: 500 }}>
+          Showing {displayRows.length} of {rows.length} rows
+        </div>
+      </div>
+
+      <div style={{ overflowX: 'auto' }}>
+        <table style={{ borderCollapse: 'collapse', width: '100%' }}>
+          <thead>
+            {table.getHeaderGroups().map((hg) => (
+              <tr key={hg.id}>
+                {hg.headers.map((header) => {
+                  const isSorted = sortConfig?.key === header.id;
+                  const canSort = header.id !== 'actions';
+
+                  return (
+                    <th
+                      key={header.id}
+                      onClick={() => canSort && handleToggleSort(header.id)}
+                      style={{
+                        textAlign: 'left',
+                        padding: '8px 10px',
+                        borderBottom: '2px solid #e5e7eb',
+                        fontSize: 13,
+                        textTransform: 'capitalize',
+                        cursor: canSort ? 'pointer' : 'default',
+                        userSelect: 'none',
+                        background: isSorted ? 'var(--primary-light)' : 'transparent',
+                        color: isSorted ? 'var(--primary)' : 'var(--text-primary)',
+                      }}
+                      title={canSort ? `Click to sort by ${header.id}` : undefined}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6 }}>
+                        <span>{flexRender(header.column.columnDef.header, header.getContext())}</span>
+                        {canSort && (
+                          <span style={{ fontSize: 12, color: isSorted ? 'var(--primary)' : '#9ca3af' }}>
+                            {isSorted ? (sortConfig.direction === 'asc' ? '▲' : '▼') : '↕️'}
+                          </span>
+                        )}
+                      </div>
+                    </th>
+                  );
+                })}
+              </tr>
+            ))}
+          </thead>
+          <tbody>
+            {table.getRowModel().rows.map((row) => (
+              <tr
+                key={row.id}
+                onClick={() => onSelectRow(row.original.id)}
+                style={{
+                  background: row.original.id === activeRowId ? '#eef2ff' : undefined,
+                  cursor: 'pointer',
+                }}
+              >
+                {row.getVisibleCells().map((cell) => (
+                  <td
+                    key={cell.id}
+                    style={{ padding: '6px 8px', borderBottom: '1px solid #f0f0f2', fontSize: 13 }}
+                  >
+                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                  </td>
+                ))}
+              </tr>
+            ))}
+            {displayRows.length === 0 && (
+              <tr>
+                <td colSpan={columns.length + 4} style={{ padding: 16, color: '#9ca3af', textAlign: 'center' }}>
+                  {rows.length === 0
+                    ? 'No rows yet — click "Add Row" to create your first record.'
+                    : 'No matching records found for search criteria.'}
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
   );
 }

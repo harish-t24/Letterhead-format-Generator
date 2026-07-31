@@ -3,7 +3,6 @@ import { useParams, Link } from 'react-router-dom';
 import { useTemplateStore } from '../store/templateStore';
 import { useDataset } from '../hooks/useDataset';
 import { useDebouncedValue } from '../hooks/useDebouncedValue';
-import { TemplateEditor } from '../components/editor/TemplateEditor';
 import { PlaceholdersPanel } from '../components/editor/PlaceholdersPanel';
 import { DataTable } from '../components/table/DataTable';
 import { AddRowButton } from '../components/table/AddRowButton';
@@ -11,7 +10,6 @@ import { PdfPreview } from '../components/preview/PdfPreview';
 import { AllRowsPreview } from '../components/preview/AllRowsPreview';
 import { PrintButton } from '../components/preview/PrintButton';
 import { TemplateInfoPanel } from '../components/editor/TemplateInfoPanel';
-import { DEFAULT_SEAL_PNG, DEFAULT_SIGN_PNG } from '../assets/default-seal-sign';
 import * as api from '../services/api';
 
 type PreviewMode = 'single' | 'all';
@@ -22,28 +20,6 @@ export function EditorPage() {
   const { rows, activeRowId, setActiveRowId, addEmptyRow, updateCell, deleteRow } =
     useDataset(templateId ?? null);
   const [previewMode, setPreviewMode] = useState<PreviewMode>('single');
-
-  const handleApplySeal = async () => {
-    if (!templateId || !activeTemplate) return;
-    const currentBody = activeTemplate.bodyHtml ?? activeTemplate.html;
-    const sealHtml = `<div style="text-align: right; margin-top: 16px; margin-bottom: 16px;"><img src="${DEFAULT_SEAL_PNG}" style="width: 120px; height: auto; display: inline-block;" alt="Company Seal" /></div>`;
-    const updated = await api.updateTemplateContent(
-      templateId,
-      currentBody + sealHtml
-    );
-    setActiveTemplate(updated);
-  };
-
-  const handleApplySignature = async () => {
-    if (!templateId || !activeTemplate) return;
-    const currentBody = activeTemplate.bodyHtml ?? activeTemplate.html;
-    const signHtml = `<div style="text-align: right; margin-top: 24px; margin-bottom: 12px;"><img src="${DEFAULT_SIGN_PNG}" style="width: 160px; height: auto; display: inline-block;" alt="Signature" /></div>`;
-    const updated = await api.updateTemplateContent(
-      templateId,
-      currentBody + signHtml
-    );
-    setActiveTemplate(updated);
-  };
 
   useEffect(() => {
     if (templateId && activeTemplate?.id !== templateId) {
@@ -128,11 +104,6 @@ export function EditorPage() {
               <span>This is an imported DOCX template. Formatting is locked to preserve layout. Modify rows below to merge data.</span>
             </div>
           )}
-          
-          <div className="app-card" style={{ padding: 24, marginBottom: 24 }}>
-            <h3 style={{ marginBottom: 16 }}>Document Body Template</h3>
-            <TemplateEditor html={activeTemplate.html} />
-          </div>
 
           <div className="app-card" style={{ padding: 24 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
@@ -209,38 +180,6 @@ export function EditorPage() {
               </div>
 
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                <button
-                  onClick={handleApplySeal}
-                  style={{
-                    padding: '8px 16px',
-                    borderRadius: 'var(--radius-sm)',
-                    border: '1px solid var(--border-color)',
-                    background: 'var(--bg-surface)',
-                    color: 'var(--text-secondary)',
-                    fontSize: 13,
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                  }}
-                  title="Put Official Seal image (Round seal.png)"
-                >
-                  🏵️ Put Seal
-                </button>
-                <button
-                  onClick={handleApplySignature}
-                  style={{
-                    padding: '8px 16px',
-                    borderRadius: 'var(--radius-sm)',
-                    border: '1px solid var(--border-color)',
-                    background: 'var(--bg-surface)',
-                    color: 'var(--text-secondary)',
-                    fontSize: 13,
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                  }}
-                  title="Place Signature image (sign.PNG)"
-                >
-                  ✍️ Place Sign
-                </button>
                 {previewMode === 'single' && <PrintButton pdfUrl={pdfUrl} />}
                 {templateId && (
                   <a

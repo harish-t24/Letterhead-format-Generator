@@ -15,15 +15,23 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.ExportController = void 0;
 const common_1 = require("@nestjs/common");
 const export_service_1 = require("./export.service");
+const templates_service_1 = require("../templates/templates.service");
+const filename_formatter_1 = require("../templates/utils/filename-formatter");
 let ExportController = class ExportController {
     exportService;
-    constructor(exportService) {
+    templatesService;
+    constructor(exportService, templatesService) {
         this.exportService = exportService;
+        this.templatesService = templatesService;
     }
     exportZip(templateId, res) {
+        const template = this.templatesService.findOne(templateId);
+        const shortName = (0, filename_formatter_1.getShortTemplateInitials)(template.templateName);
+        const year = new Date().getFullYear().toString().slice(-2);
+        const zipFilename = `SCT ${shortName} ${year}_Merged.zip`;
         res.set({
             'Content-Type': 'application/zip',
-            'Content-Disposition': `attachment; filename="export-${templateId}.zip"`,
+            'Content-Disposition': `attachment; filename="${zipFilename}"`,
         });
         const stream = this.exportService.exportAllAsZip(templateId);
         stream.pipe(res);
@@ -40,6 +48,7 @@ __decorate([
 ], ExportController.prototype, "exportZip", null);
 exports.ExportController = ExportController = __decorate([
     (0, common_1.Controller)('export'),
-    __metadata("design:paramtypes", [export_service_1.ExportService])
+    __metadata("design:paramtypes", [export_service_1.ExportService,
+        templates_service_1.TemplatesService])
 ], ExportController);
 //# sourceMappingURL=export.controller.js.map

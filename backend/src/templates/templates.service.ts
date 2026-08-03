@@ -55,6 +55,30 @@ export class TemplatesService {
     }
   }
 
+  private generateUniqueTemplateName(requestedName: string, currentTemplateId?: string): string {
+    const raw = requestedName.trim() || 'Untitled Template';
+    const existingNames = new Set(
+      Array.from(this.templates.values())
+        .filter((t) => t.id !== currentTemplateId)
+        .map((t) => t.templateName.toLowerCase())
+    );
+
+    if (!existingNames.has(raw.toLowerCase())) {
+      return raw;
+    }
+
+    const match = raw.match(/^(.*?)(?:\s*\(\d+\))?$/);
+    const base = match && match[1] && match[1].trim() ? match[1].trim() : raw;
+
+    let counter = 1;
+    let candidate = `${base} (${counter})`;
+    while (existingNames.has(candidate.toLowerCase())) {
+      counter++;
+      candidate = `${base} (${counter})`;
+    }
+    return candidate;
+  }
+
   // ---------- Import flow (existing) ----------
 
   async createFromDocx(originalName: string, docxBuffer: Buffer): Promise<TemplateRecord> {
@@ -71,10 +95,12 @@ export class TemplatesService {
 
     const placeholders = extractPlaceholdersFromDocx(docxBuffer);
     const now = new Date().toISOString();
+    const baseName = originalName.replace(/\.docx$/i, '');
+    const templateName = this.generateUniqueTemplateName(baseName);
 
     const record: TemplateRecord = {
       id,
-      templateName: originalName.replace(/\.docx$/i, ''),
+      templateName,
       originalName,
       docxPath,
       html,
@@ -131,10 +157,12 @@ export class TemplatesService {
     const { value: html } = await mammoth.convertToHtml({ buffer: docxBuffer });
     const placeholders = extractPlaceholdersFromDocx(docxBuffer);
     const now = new Date().toISOString();
+    const requestedName = templateName?.trim() || starter.label;
+    const finalTemplateName = this.generateUniqueTemplateName(requestedName);
 
     const record: TemplateRecord = {
       id,
-      templateName: templateName?.trim() || starter.label,
+      templateName: finalTemplateName,
       originalName: `${starter.label}.docx`,
       docxPath,
       html,
@@ -230,7 +258,8 @@ export class TemplatesService {
 
   async renameTemplate(id: string, templateName: string): Promise<TemplateRecord> {
     const record = this.findOne(id);
-    record.templateName = templateName.trim() || record.templateName;
+    const finalTemplateName = this.generateUniqueTemplateName(templateName, id);
+    record.templateName = finalTemplateName;
     record.updatedAt = new Date().toISOString();
     this.saveTemplates();
     return record;

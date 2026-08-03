@@ -15,12 +15,13 @@ const datasets_module_1 = require("./datasets/datasets.module");
 const conversion_module_1 = require("./conversion/conversion.module");
 const render_module_1 = require("./render/render.module");
 const export_module_1 = require("./export/export.module");
+const admin_module_1 = require("./admin/admin.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
 exports.AppModule = AppModule = __decorate([
     (0, common_1.Module)({
-        imports: [templates_module_1.TemplatesModule, datasets_module_1.DatasetsModule, conversion_module_1.ConversionModule, render_module_1.RenderModule, export_module_1.ExportModule],
+        imports: [templates_module_1.TemplatesModule, datasets_module_1.DatasetsModule, conversion_module_1.ConversionModule, render_module_1.RenderModule, export_module_1.ExportModule, admin_module_1.AdminModule],
         controllers: [app_controller_1.AppController],
         providers: [app_service_1.AppService],
     })

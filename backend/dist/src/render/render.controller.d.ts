@@ -10,5 +10,5 @@ export declare class RenderController {
     private readonly conversionService;
     constructor(renderService: RenderService, templatesService: TemplatesService, datasetsService: DatasetsService, conversionService: ConversionService);
     renderDocx(templateId: string, rowId: string, res: Response): Promise<void>;
-    renderPdf(templateId: string, rowId: string, res: Response): Promise<void>;
+    renderPdf(templateId: string, rowId: string, download: string, res: Response): Promise<void>;
 }

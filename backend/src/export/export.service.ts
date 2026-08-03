@@ -6,6 +6,8 @@ import { TemplatesService } from '../templates/templates.service';
 import { DatasetsService } from '../datasets/datasets.service';
 import { ConversionService } from '../conversion/conversion.service';
 
+import { formatMergedFilename } from '../templates/utils/filename-formatter';
+
 @Injectable()
 export class ExportService {
   constructor(
@@ -17,6 +19,7 @@ export class ExportService {
 
   /** Merges + converts every row for a template, streaming them into a single zip. */
   exportAllAsZip(templateId: string): PassThrough {
+    const templateRecord = this.templatesService.findOne(templateId);
     const templateBuffer = this.templatesService.getDocxBuffer(templateId);
     const rows = this.datasetsService.listRows(templateId);
 
@@ -28,16 +31,13 @@ export class ExportService {
     // Run sequentially to avoid hammering the conversion service with
     // dozens of simultaneous requests.
     (async () => {
-      for (const row of rows) {
+      for (let i = 0; i < rows.length; i++) {
+        const row = rows[i];
         const mergedDocx = this.renderService.merge(templateBuffer, row.data);
-        const pdf = await this.conversionService.docxToPdf(mergedDocx, `${row.id}.docx`);
+        const filename = formatMergedFilename(templateRecord.templateName, i, row.data);
+        const pdf = await this.conversionService.docxToPdf(mergedDocx, `${filename}.docx`);
         this.datasetsService.markUsed(templateId, row.id);
-        const nameKey = Object.keys(row.data).find(
-          (k) => k.toLowerCase() === 'name' || k.toLowerCase() === 'title',
-        );
-        const label = nameKey ? row.data[nameKey] : null;
-        const filenameLabel = label ? label.trim().replace(/[^a-zA-Z0-9_-]/g, '_') : row.id.slice(0, 8);
-        archive.append(pdf, { name: `${filenameLabel}-${row.id.slice(0, 8)}.pdf` });
+        archive.append(pdf, { name: `${filename}.pdf` });
       }
       archive.finalize();
     })().catch((err) => stream.emit('error', err));

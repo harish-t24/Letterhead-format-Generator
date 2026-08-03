@@ -19,6 +19,7 @@ const templates_service_1 = require("./templates.service");
 const conversion_service_1 = require("../conversion/conversion.service");
 const create_template_dto_1 = require("./dto/create-template.dto");
 const starter_templates_1 = require("./starters/starter-templates");
+const filename_formatter_1 = require("./utils/filename-formatter");
 let TemplatesController = class TemplatesController {
     templatesService;
     conversionService;
@@ -75,11 +76,15 @@ let TemplatesController = class TemplatesController {
         return this.templatesService.renameTemplate(id, dto.templateName ?? '');
     }
     async exportPdf(id, res) {
+        const template = this.templatesService.findOne(id);
+        const shortName = (0, filename_formatter_1.getShortTemplateInitials)(template.templateName);
+        const year = new Date().getFullYear().toString().slice(-2);
+        const filename = `SCT ${shortName} ${year}`;
         const docxBuffer = this.templatesService.getDocxBuffer(id);
-        const pdf = await this.conversionService.docxToPdf(docxBuffer, `${id}.docx`);
+        const pdf = await this.conversionService.docxToPdf(docxBuffer, `${filename}.docx`);
         res.set({
             'Content-Type': 'application/pdf',
-            'Content-Disposition': `inline; filename="${id}.pdf"`,
+            'Content-Disposition': `inline; filename="${filename}.pdf"`,
         });
         res.send(pdf);
     }

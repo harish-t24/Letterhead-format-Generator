@@ -24,7 +24,8 @@ export function DatasetsPage() {
   const filtered = datasets.filter(
     (d) =>
       d.datasetName.toLowerCase().includes(search.toLowerCase()) ||
-      d.templateName.toLowerCase().includes(search.toLowerCase()),
+      d.templateName.toLowerCase().includes(search.toLowerCase()) ||
+      d.templateId.toLowerCase().includes(search.toLowerCase()),
   );
 
   const handleDelete = async (d: DatasetSummary) => {
@@ -64,7 +65,7 @@ export function DatasetsPage() {
         <input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="🔍 Search datasets..."
+          placeholder="🔍 Search by name or dataset ID..."
           style={{
             width: '100%',
             padding: '10px 36px 10px 14px',

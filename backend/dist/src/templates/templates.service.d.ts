@@ -4,6 +4,7 @@ export declare class TemplatesService {
     constructor();
     private loadTemplates;
     private saveTemplates;
+    private generateUniqueTemplateName;
     createFromDocx(originalName: string, docxBuffer: Buffer): Promise<TemplateRecord>;
     createFromStarter(source: 'blank' | 'shinecraft', templateName: string, options?: {
         includeHeader?: boolean;

@@ -181,6 +181,29 @@ export function EditorPage() {
 
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                 {previewMode === 'single' && <PrintButton pdfUrl={pdfUrl} />}
+                {templateId && activeRowId && previewMode === 'single' && (
+                  <a
+                    href={`${api.renderPdfUrl(templateId, activeRowId)}?download=1`}
+                    download
+                    style={{
+                      padding: '8px 16px',
+                      borderRadius: 'var(--radius-sm)',
+                      border: 'none',
+                      background: 'var(--primary)',
+                      color: 'var(--text-on-primary)',
+                      fontSize: 13,
+                      fontWeight: 600,
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      textDecoration: 'none',
+                      boxShadow: '0 2px 8px rgba(99, 102, 241, 0.25)',
+                    }}
+                    title="Export currently selected row as a single PDF document"
+                  >
+                    📄 Export Single PDF
+                  </a>
+                )}
                 {templateId && (
                   <a
                     href={api.exportZipUrl(templateId)}
@@ -195,6 +218,7 @@ export function EditorPage() {
                       display: 'inline-flex',
                       alignItems: 'center',
                       gap: 6,
+                      textDecoration: 'none',
                     }}
                   >
                     📦 Export All (ZIP)

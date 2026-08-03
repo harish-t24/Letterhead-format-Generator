@@ -18,6 +18,8 @@ import { ConversionService } from '../conversion/conversion.service';
 import { CreateFromStarterDto, RenameTemplateDto, UpdateContentDto } from './dto/create-template.dto';
 import { BLANK_STARTER, SHINECRAFT_STARTER } from './starters/starter-templates';
 
+import { getShortTemplateInitials } from './utils/filename-formatter';
+
 @Controller('templates')
 export class TemplatesController {
   constructor(
@@ -115,11 +117,15 @@ export class TemplatesController {
    * document itself (letterhead + whatever body content exists). */
   @Get(':id/export-pdf')
   async exportPdf(@Param('id') id: string, @Res() res: Response) {
+    const template = this.templatesService.findOne(id);
+    const shortName = getShortTemplateInitials(template.templateName);
+    const year = new Date().getFullYear().toString().slice(-2);
+    const filename = `SCT ${shortName} ${year}`;
     const docxBuffer = this.templatesService.getDocxBuffer(id);
-    const pdf = await this.conversionService.docxToPdf(docxBuffer, `${id}.docx`);
+    const pdf = await this.conversionService.docxToPdf(docxBuffer, `${filename}.docx`);
     res.set({
       'Content-Type': 'application/pdf',
-      'Content-Disposition': `inline; filename="${id}.pdf"`,
+      'Content-Disposition': `inline; filename="${filename}.pdf"`,
     });
     res.send(pdf);
   }

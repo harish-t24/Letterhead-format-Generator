@@ -1,9 +1,11 @@
-import { Controller, Get, Param, Res } from '@nestjs/common';
+import { Controller, Get, Param, Query, Res } from '@nestjs/common';
 import type { Response } from 'express';
 import { RenderService } from './render.service';
 import { TemplatesService } from '../templates/templates.service';
 import { DatasetsService } from '../datasets/datasets.service';
 import { ConversionService } from '../conversion/conversion.service';
+
+import { formatMergedFilename } from '../templates/utils/filename-formatter';
 
 @Controller('render')
 export class RenderController {
@@ -25,14 +27,18 @@ export class RenderController {
     @Param('rowId') rowId: string,
     @Res() res: Response,
   ) {
+    const templateRecord = this.templatesService.findOne(templateId);
     const templateBuffer = this.templatesService.getDocxBuffer(templateId);
+    const allRows = this.datasetsService.listRows(templateId);
+    const rowIndex = allRows.findIndex((r) => r.id === rowId);
     const row = this.datasetsService.getRow(templateId, rowId);
     const mergedDocx = this.renderService.merge(templateBuffer, row.data);
+    const filename = formatMergedFilename(templateRecord.templateName, rowIndex >= 0 ? rowIndex : 0, row.data);
 
     res.set({
       'Content-Type':
         'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      'Content-Disposition': `attachment; filename="merged-${rowId}.docx"`,
+      'Content-Disposition': `attachment; filename="${filename}.docx"`,
     });
     res.send(mergedDocx);
   }
@@ -46,17 +52,25 @@ export class RenderController {
   async renderPdf(
     @Param('templateId') templateId: string,
     @Param('rowId') rowId: string,
+    @Query('download') download: string,
     @Res() res: Response,
   ) {
+    const templateRecord = this.templatesService.findOne(templateId);
     const templateBuffer = this.templatesService.getDocxBuffer(templateId);
+    const allRows = this.datasetsService.listRows(templateId);
+    const rowIndex = allRows.findIndex((r) => r.id === rowId);
     const row = this.datasetsService.getRow(templateId, rowId);
     const mergedDocx = this.renderService.merge(templateBuffer, row.data);
-    const pdf = await this.conversionService.docxToPdf(mergedDocx, `${rowId}.docx`);
+    const filename = formatMergedFilename(templateRecord.templateName, rowIndex >= 0 ? rowIndex : 0, row.data);
+    const pdf = await this.conversionService.docxToPdf(mergedDocx, `${filename}.docx`);
     this.datasetsService.markUsed(templateId, rowId);
+
+    const isDownload = download === '1' || download === 'true';
+    const disposition = isDownload ? `attachment; filename="${filename}.pdf"` : `inline; filename="${filename}.pdf"`;
 
     res.set({
       'Content-Type': 'application/pdf',
-      'Content-Disposition': `inline; filename="${rowId}.pdf"`,
+      'Content-Disposition': disposition,
     });
     res.send(pdf);
   }

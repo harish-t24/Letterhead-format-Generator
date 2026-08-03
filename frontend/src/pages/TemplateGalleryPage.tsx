@@ -59,7 +59,7 @@ export function TemplateGalleryPage() {
 
   const openTemplate = (t: (typeof templates)[number]) => {
     setActiveTemplate(t);
-    navigate(t.source === 'imported' ? `/editor/${t.id}` : `/create/${t.id}`);
+    navigate(`/editor/${t.id}`);
   };
 
   const handleDeleteTemplate = async (e: React.MouseEvent, id: string, name: string) => {
@@ -121,7 +121,7 @@ export function TemplateGalleryPage() {
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="🔍 Search by name or ID..."
+            placeholder="🔍 Search by name or template ID..."
             style={{
               width: '100%',
               padding: '10px 36px 10px 14px',
@@ -237,16 +237,27 @@ export function TemplateGalleryPage() {
                       e.stopPropagation();
                       openTemplate(t);
                     }}
-                    style={smallBtnOutline}
+                    style={smallBtnFilled}
                   >
-                    Edit
+                    Merge Data
                   </button>
+                  {t.source !== 'imported' && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigate(`/create/${t.id}`);
+                      }}
+                      style={smallBtnOutline}
+                    >
+                      Edit Layout
+                    </button>
+                  )}
                   <a
                     onClick={(e) => e.stopPropagation()}
                     href={api.templateExportPdfUrl(t.id)}
                     target="_blank"
                     rel="noreferrer"
-                    style={{ ...smallBtnFilled, textDecoration: 'none', textAlign: 'center' }}
+                    style={{ ...smallBtnOutline, textDecoration: 'none', textAlign: 'center' }}
                   >
                     Download
                   </a>
@@ -275,7 +286,7 @@ export function TemplateGalleryPage() {
             </thead>
             <tbody>
               {filtered.map((t) => (
-                <tr key={t.id}>
+                <tr key={t.id} onClick={() => openTemplate(t)} style={{ cursor: 'pointer' }}>
                   <td style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{t.templateName}</td>
                   <td style={{ fontFamily: 'monospace', fontSize: 12, color: 'var(--text-muted)' }}>
                     {t.id.slice(0, 8)}
@@ -286,10 +297,33 @@ export function TemplateGalleryPage() {
                   <td>{formatDate(t.createdAt)}</td>
                   <td style={{ textAlign: 'right' }}>
                     <div style={{ display: 'inline-flex', gap: 6 }}>
-                      <button onClick={() => openTemplate(t)} style={smallBtnOutline}>
-                        Edit
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openTemplate(t);
+                        }}
+                        style={smallBtnFilled}
+                      >
+                        Merge Data
                       </button>
-                      <a href={api.templateExportPdfUrl(t.id)} target="_blank" rel="noreferrer" style={{ ...smallBtnFilled, textDecoration: 'none' }}>
+                      {t.source !== 'imported' && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(`/create/${t.id}`);
+                          }}
+                          style={smallBtnOutline}
+                        >
+                          Edit Layout
+                        </button>
+                      )}
+                      <a
+                        onClick={(e) => e.stopPropagation()}
+                        href={api.templateExportPdfUrl(t.id)}
+                        target="_blank"
+                        rel="noreferrer"
+                        style={{ ...smallBtnOutline, textDecoration: 'none' }}
+                      >
                         Download
                       </a>
                       <button

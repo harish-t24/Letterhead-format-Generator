@@ -35,10 +35,10 @@ export function AllRowsPreview({ templateId, rows }: Props) {
               zIndex: 1,
             }}
           >
-            Row {idx + 1} of {rows.length}
+            Row {String(idx + 1).padStart(3, '0')} of {String(rows.length).padStart(3, '0')}
             {row.data && Object.keys(row.data).length > 0
-              ? ` — ${Object.values(row.data)[0] || row.id.slice(0, 8)}`
-              : ` — ${row.id.slice(0, 8)}`}
+              ? ` — ${Object.values(row.data)[0] || String(idx + 1).padStart(3, '0')}`
+              : ` — ${String(idx + 1).padStart(3, '0')}`}
           </div>
           <PdfDocumentView pdfUrl={api.renderPdfUrl(templateId, row.id)} scale={1.1} />
         </div>

@@ -6,9 +6,10 @@ import { DatasetsModule } from './datasets/datasets.module';
 import { ConversionModule } from './conversion/conversion.module';
 import { RenderModule } from './render/render.module';
 import { ExportModule } from './export/export.module';
+import { AdminModule } from './admin/admin.module';
 
 @Module({
-  imports: [TemplatesModule, DatasetsModule, ConversionModule, RenderModule, ExportModule],
+  imports: [TemplatesModule, DatasetsModule, ConversionModule, RenderModule, ExportModule, AdminModule],
   controllers: [AppController],
   providers: [AppService],
 })

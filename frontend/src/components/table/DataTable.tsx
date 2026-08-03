@@ -35,16 +35,23 @@ export function DataTable({
   const [searchQuery, setSearchQuery] = useState('');
   const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(null);
 
-  // Search filtering
+  // Search filtering (matches person name, any field value, or formatted Row ID like 001, 002)
   const searchedRows = useMemo(() => {
     if (!searchQuery.trim()) return rows;
     const q = searchQuery.toLowerCase().trim();
-    return rows.filter((r) => {
-      return (
-        Object.values(r.data).some((val) =>
-          String(val ?? '').toLowerCase().includes(q)
-        ) || r.id.toLowerCase().includes(q)
+    return rows.filter((r, idx) => {
+      const rowIdFormatted = String(idx + 1).padStart(3, '0');
+      const rowIdNumber = String(idx + 1);
+      const matchesRowId =
+        rowIdFormatted.includes(q) ||
+        rowIdNumber === q ||
+        r.id.toLowerCase().includes(q);
+
+      const matchesNameOrFields = Object.values(r.data).some((val) =>
+        String(val ?? '').toLowerCase().includes(q)
       );
+
+      return matchesRowId || matchesNameOrFields;
     });
   }, [rows, searchQuery]);
 
@@ -99,11 +106,14 @@ export function DataTable({
       columnHelper.display({
         id: 'rowId',
         header: 'Row ID',
-        cell: (ctx) => (
-          <code style={{ fontSize: 11, color: '#6b7280' }} title={ctx.row.original.id}>
-            {ctx.row.original.id.slice(0, 8)}
-          </code>
-        ),
+        cell: (ctx) => {
+          const rowNumber = String(ctx.row.index + 1).padStart(3, '0');
+          return (
+            <code style={{ fontSize: 12, fontWeight: 700, color: 'var(--primary)', fontFamily: 'monospace' }} title={`Row ${ctx.row.index + 1} (${ctx.row.original.id})`}>
+              {rowNumber}
+            </code>
+          );
+        },
       }),
       ...columns.map((placeholder, colIndex) =>
         columnHelper.display({
@@ -257,7 +267,7 @@ export function DataTable({
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="🔍 Search rows..."
+            placeholder="🔍 Search by name or Row ID (e.g. 001)..."
             style={{
               paddingLeft: 32,
               paddingRight: searchQuery ? 30 : 12,

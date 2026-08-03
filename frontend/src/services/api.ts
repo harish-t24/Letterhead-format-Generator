@@ -146,3 +146,23 @@ export function renderDocxUrl(templateId: string, rowId: string): string {
 export function exportZipUrl(templateId: string): string {
   return `${BASE_URL}/export/${templateId}/zip`;
 }
+
+// ---- Admin System Import / Export ----
+
+export function exportSystemBackupUrl(): string {
+  return `${BASE_URL}/admin/export-system`;
+}
+
+export async function importSystemFile(file: File): Promise<{ success: boolean; restoredTemplates: number; restoredRows: number }> {
+  const form = new FormData();
+  form.append('file', file);
+  const res = await api.post('/admin/import-system-file', form, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+  return res.data;
+}
+
+export async function importSystemBackup(backupJson: any): Promise<{ success: boolean; restoredTemplates: number; restoredRows: number }> {
+  const res = await api.post('/admin/import-system', backupJson);
+  return res.data;
+}

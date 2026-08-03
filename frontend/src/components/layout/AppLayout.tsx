@@ -1,11 +1,13 @@
 import { useState } from 'react';
-import { NavLink, Outlet } from 'react-router-dom';
+import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import logo from '../../assets/logo.png';
+import * as api from '../../services/api';
 
 const NAV_ITEMS = [
   { to: '/', label: 'Dashboard', icon: '📊', end: true },
   { to: '/templates', label: 'Templates', icon: '📄' },
   { to: '/datasets', label: 'Datasets', icon: '🗂️' },
+  { to: '/admin', label: 'Admin Backup', icon: '⚙️' },
 ];
 
 /**
@@ -19,6 +21,7 @@ const NAV_ITEMS = [
 export function AppLayout() {
   const [collapsed, setCollapsed] = useState(false);
   const [showAdminMenu, setShowAdminMenu] = useState(false);
+  const navigate = useNavigate();
 
   return (
     <div style={{ display: 'flex', height: '100vh', background: 'var(--bg-primary)' }}>
@@ -174,37 +177,58 @@ export function AppLayout() {
                 </div>
 
                 <div style={{ marginTop: 16, paddingTop: 12, borderTop: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  <a
+                    href={api.exportSystemBackupUrl()}
+                    download
+                    onClick={() => setShowAdminMenu(false)}
+                    style={{
+                      width: '100%',
+                      padding: '8px 12px',
+                      background: 'var(--primary)',
+                      color: 'var(--text-on-primary)',
+                      border: 'none',
+                      borderRadius: 'var(--radius-sm)',
+                      cursor: 'pointer',
+                      fontSize: 12,
+                      fontWeight: 700,
+                      textDecoration: 'none',
+                      textAlign: 'center',
+                      boxSizing: 'border-box',
+                    }}
+                  >
+                    📦 Quick Export Backup (.json)
+                  </a>
                   <button
                     onClick={() => {
                       setShowAdminMenu(false);
-                      window.location.reload();
+                      navigate('/admin');
                     }}
                     style={{
                       width: '100%',
-                      padding: '6px 12px',
+                      padding: '8px 12px',
                       background: 'var(--bg-secondary)',
-                      color: 'var(--text-secondary)',
-                      border: 'none',
+                      color: 'var(--text-primary)',
+                      border: '1px solid var(--border-color)',
                       borderRadius: 'var(--radius-sm)',
                       cursor: 'pointer',
                       fontSize: 12,
                       fontWeight: 600,
                     }}
                   >
-                    🔄 Reload Workspace
+                    ⚙️ Backup & Restore Page
                   </button>
                   <button
                     onClick={() => setShowAdminMenu(false)}
                     style={{
                       width: '100%',
                       padding: '6px 12px',
-                      background: 'var(--primary)',
-                      color: '#ffffff',
+                      background: 'transparent',
+                      color: 'var(--text-muted)',
                       border: 'none',
                       borderRadius: 'var(--radius-sm)',
                       cursor: 'pointer',
-                      fontSize: 12,
-                      fontWeight: 600,
+                      fontSize: 11,
+                      fontWeight: 500,
                     }}
                   >
                     Close Menu

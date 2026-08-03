@@ -18,6 +18,7 @@ const render_service_1 = require("./render.service");
 const templates_service_1 = require("../templates/templates.service");
 const datasets_service_1 = require("../datasets/datasets.service");
 const conversion_service_1 = require("../conversion/conversion.service");
+const filename_formatter_1 = require("../templates/utils/filename-formatter");
 let RenderController = class RenderController {
     renderService;
     templatesService;
@@ -30,24 +31,34 @@ let RenderController = class RenderController {
         this.conversionService = conversionService;
     }
     async renderDocx(templateId, rowId, res) {
+        const templateRecord = this.templatesService.findOne(templateId);
         const templateBuffer = this.templatesService.getDocxBuffer(templateId);
+        const allRows = this.datasetsService.listRows(templateId);
+        const rowIndex = allRows.findIndex((r) => r.id === rowId);
         const row = this.datasetsService.getRow(templateId, rowId);
         const mergedDocx = this.renderService.merge(templateBuffer, row.data);
+        const filename = (0, filename_formatter_1.formatMergedFilename)(templateRecord.templateName, rowIndex >= 0 ? rowIndex : 0, row.data);
         res.set({
             'Content-Type': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-            'Content-Disposition': `attachment; filename="merged-${rowId}.docx"`,
+            'Content-Disposition': `attachment; filename="${filename}.docx"`,
         });
         res.send(mergedDocx);
     }
-    async renderPdf(templateId, rowId, res) {
+    async renderPdf(templateId, rowId, download, res) {
+        const templateRecord = this.templatesService.findOne(templateId);
         const templateBuffer = this.templatesService.getDocxBuffer(templateId);
+        const allRows = this.datasetsService.listRows(templateId);
+        const rowIndex = allRows.findIndex((r) => r.id === rowId);
         const row = this.datasetsService.getRow(templateId, rowId);
         const mergedDocx = this.renderService.merge(templateBuffer, row.data);
-        const pdf = await this.conversionService.docxToPdf(mergedDocx, `${rowId}.docx`);
+        const filename = (0, filename_formatter_1.formatMergedFilename)(templateRecord.templateName, rowIndex >= 0 ? rowIndex : 0, row.data);
+        const pdf = await this.conversionService.docxToPdf(mergedDocx, `${filename}.docx`);
         this.datasetsService.markUsed(templateId, rowId);
+        const isDownload = download === '1' || download === 'true';
+        const disposition = isDownload ? `attachment; filename="${filename}.pdf"` : `inline; filename="${filename}.pdf"`;
         res.set({
             'Content-Type': 'application/pdf',
-            'Content-Disposition': `inline; filename="${rowId}.pdf"`,
+            'Content-Disposition': disposition,
         });
         res.send(pdf);
     }
@@ -66,9 +77,10 @@ __decorate([
     (0, common_1.Get)(':templateId/:rowId/pdf'),
     __param(0, (0, common_1.Param)('templateId')),
     __param(1, (0, common_1.Param)('rowId')),
-    __param(2, (0, common_1.Res)()),
+    __param(2, (0, common_1.Query)('download')),
+    __param(3, (0, common_1.Res)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, String, Object]),
+    __metadata("design:paramtypes", [String, String, String, Object]),
     __metadata("design:returntype", Promise)
 ], RenderController.prototype, "renderPdf", null);
 exports.RenderController = RenderController = __decorate([

@@ -17,6 +17,7 @@ const render_service_1 = require("../render/render.service");
 const templates_service_1 = require("../templates/templates.service");
 const datasets_service_1 = require("../datasets/datasets.service");
 const conversion_service_1 = require("../conversion/conversion.service");
+const filename_formatter_1 = require("../templates/utils/filename-formatter");
 let ExportService = class ExportService {
     renderService;
     templatesService;
@@ -29,6 +30,7 @@ let ExportService = class ExportService {
         this.conversionService = conversionService;
     }
     exportAllAsZip(templateId) {
+        const templateRecord = this.templatesService.findOne(templateId);
         const templateBuffer = this.templatesService.getDocxBuffer(templateId);
         const rows = this.datasetsService.listRows(templateId);
         const stream = new stream_1.PassThrough();
@@ -36,14 +38,13 @@ let ExportService = class ExportService {
         archive.on('error', (err) => stream.emit('error', err));
         archive.pipe(stream);
         (async () => {
-            for (const row of rows) {
+            for (let i = 0; i < rows.length; i++) {
+                const row = rows[i];
                 const mergedDocx = this.renderService.merge(templateBuffer, row.data);
-                const pdf = await this.conversionService.docxToPdf(mergedDocx, `${row.id}.docx`);
+                const filename = (0, filename_formatter_1.formatMergedFilename)(templateRecord.templateName, i, row.data);
+                const pdf = await this.conversionService.docxToPdf(mergedDocx, `${filename}.docx`);
                 this.datasetsService.markUsed(templateId, row.id);
-                const nameKey = Object.keys(row.data).find((k) => k.toLowerCase() === 'name' || k.toLowerCase() === 'title');
-                const label = nameKey ? row.data[nameKey] : null;
-                const filenameLabel = label ? label.trim().replace(/[^a-zA-Z0-9_-]/g, '_') : row.id.slice(0, 8);
-                archive.append(pdf, { name: `${filenameLabel}-${row.id.slice(0, 8)}.pdf` });
+                archive.append(pdf, { name: `${filename}.pdf` });
             }
             archive.finalize();
         })().catch((err) => stream.emit('error', err));

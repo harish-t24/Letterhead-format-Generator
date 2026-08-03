@@ -109,7 +109,7 @@ export function TemplateGalleryPage() {
             boxShadow: '0 4px 12px rgba(99, 102, 241, 0.2)',
           }}
         >
-          ＋ Create Template
+          ✨ ＋ Create Template
         </button>
       </div>
 
@@ -166,7 +166,7 @@ export function TemplateGalleryPage() {
               borderRadius: 0,
             }}
           >
-            Cards
+            🎴 Cards
           </button>
           <button
             onClick={() => setView('table')}
@@ -181,7 +181,7 @@ export function TemplateGalleryPage() {
               borderRadius: 0,
             }}
           >
-            Table
+            📊 Table
           </button>
         </div>
       </div>
@@ -239,7 +239,7 @@ export function TemplateGalleryPage() {
                     }}
                     style={smallBtnFilled}
                   >
-                    Merge Data
+                    ⚡ Merge Data
                   </button>
                   {t.source !== 'imported' && (
                     <button
@@ -249,7 +249,7 @@ export function TemplateGalleryPage() {
                       }}
                       style={smallBtnOutline}
                     >
-                      Edit Layout
+                      ✏️ Edit Layout
                     </button>
                   )}
                   <a
@@ -259,13 +259,13 @@ export function TemplateGalleryPage() {
                     rel="noreferrer"
                     style={{ ...smallBtnOutline, textDecoration: 'none', textAlign: 'center' }}
                   >
-                    Download
+                    📥 Download
                   </a>
                   <button
                     onClick={(e) => handleDeleteTemplate(e, t.id, t.templateName)}
                     style={smallBtnDelete}
                   >
-                    Delete
+                    🗑️ Delete
                   </button>
                 </div>
               </div>
@@ -304,7 +304,7 @@ export function TemplateGalleryPage() {
                         }}
                         style={smallBtnFilled}
                       >
-                        Merge Data
+                        ⚡ Merge Data
                       </button>
                       {t.source !== 'imported' && (
                         <button
@@ -314,7 +314,7 @@ export function TemplateGalleryPage() {
                           }}
                           style={smallBtnOutline}
                         >
-                          Edit Layout
+                          ✏️ Edit Layout
                         </button>
                       )}
                       <a
@@ -324,13 +324,13 @@ export function TemplateGalleryPage() {
                         rel="noreferrer"
                         style={{ ...smallBtnOutline, textDecoration: 'none' }}
                       >
-                        Download
+                        📥 Download
                       </a>
                       <button
                         onClick={(e) => handleDeleteTemplate(e, t.id, t.templateName)}
                         style={smallBtnDelete}
                       >
-                        Delete
+                        🗑️ Delete
                       </button>
                     </div>
                   </td>

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   useReactTable,
   getCoreRowModel,
@@ -88,6 +88,22 @@ export function DataTable({
     });
   }, [searchedRows, sortConfig]);
 
+  const PAGE_SIZE = 5;
+  const [currentPage, setCurrentPage] = useState(1);
+
+  // Reset page if out of bounds (e.g. after deletion or filtering)
+  const totalPages = Math.max(1, Math.ceil(displayRows.length / PAGE_SIZE));
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [totalPages, currentPage]);
+
+  const paginatedRows = useMemo(() => {
+    const start = (currentPage - 1) * PAGE_SIZE;
+    return displayRows.slice(start, start + PAGE_SIZE);
+  }, [displayRows, currentPage]);
+
   const handleToggleSort = (colId: string) => {
     if (colId === 'actions') return;
     setSortConfig((prev) => {
@@ -107,9 +123,10 @@ export function DataTable({
         id: 'rowId',
         header: 'Row ID',
         cell: (ctx) => {
-          const rowNumber = String(ctx.row.index + 1).padStart(3, '0');
+          const overallIndex = (currentPage - 1) * PAGE_SIZE + ctx.row.index;
+          const rowNumber = String(overallIndex + 1).padStart(3, '0');
           return (
-            <code style={{ fontSize: 12, fontWeight: 700, color: 'var(--primary)', fontFamily: 'monospace' }} title={`Row ${ctx.row.index + 1} (${ctx.row.original.id})`}>
+            <code style={{ fontSize: 12, fontWeight: 700, color: 'var(--primary)', fontFamily: 'monospace' }} title={`Row ${overallIndex + 1} (${ctx.row.original.id})`}>
               {rowNumber}
             </code>
           );
@@ -131,8 +148,8 @@ export function DataTable({
               if (!isBackwards) {
                 if (colIndex < columns.length - 1) {
                   setEditingCell({ rowId: row.id, col: columns[colIndex + 1] });
-                } else if (rowIndex < displayRows.length - 1) {
-                  setEditingCell({ rowId: displayRows[rowIndex + 1].id, col: columns[0] });
+                } else if (rowIndex < paginatedRows.length - 1) {
+                  setEditingCell({ rowId: paginatedRows[rowIndex + 1].id, col: columns[0] });
                 } else {
                   setEditingCell(null);
                 }
@@ -140,7 +157,7 @@ export function DataTable({
                 if (colIndex > 0) {
                   setEditingCell({ rowId: row.id, col: columns[colIndex - 1] });
                 } else if (rowIndex > 0) {
-                  setEditingCell({ rowId: displayRows[rowIndex - 1].id, col: columns[columns.length - 1] });
+                  setEditingCell({ rowId: paginatedRows[rowIndex - 1].id, col: columns[columns.length - 1] });
                 } else {
                   setEditingCell(null);
                 }
@@ -237,10 +254,10 @@ export function DataTable({
       }),
     ];
     return cols;
-  }, [columns, displayRows, editingCell, onCellEdit, onDeleteRow]);
+  }, [columns, paginatedRows, editingCell, onCellEdit, onDeleteRow, currentPage]);
 
   const table = useReactTable({
-    data: displayRows,
+    data: paginatedRows,
     columns: tableColumns,
     getCoreRowModel: getCoreRowModel(),
   });
@@ -456,6 +473,125 @@ export function DataTable({
           </tbody>
         </table>
       </div>
+
+      {/* Pagination Footer */}
+      {displayRows.length > 0 && (
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '10px 14px',
+            background: 'var(--bg-secondary)',
+            border: '1px solid var(--border-color)',
+            borderRadius: 'var(--radius-sm)',
+            flexWrap: 'wrap',
+            gap: 12,
+            marginTop: 4,
+          }}
+        >
+          <div style={{ fontSize: 12, color: 'var(--text-secondary)', fontWeight: 600 }}>
+            Showing {(currentPage - 1) * PAGE_SIZE + 1}–
+            {Math.min(currentPage * PAGE_SIZE, displayRows.length)} of {displayRows.length} rows (Page {currentPage} of {totalPages})
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+            <button
+              type="button"
+              onClick={() => setCurrentPage(1)}
+              disabled={currentPage === 1}
+              style={{
+                padding: '4px 10px',
+                fontSize: 12,
+                fontWeight: 600,
+                borderRadius: 6,
+                border: '1px solid var(--border-color)',
+                background: currentPage === 1 ? 'var(--bg-secondary)' : '#ffffff',
+                color: currentPage === 1 ? 'var(--text-muted)' : 'var(--text-primary)',
+                cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
+              }}
+              title="First Page"
+            >
+              ⏮ First
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+              style={{
+                padding: '4px 10px',
+                fontSize: 12,
+                fontWeight: 600,
+                borderRadius: 6,
+                border: '1px solid var(--border-color)',
+                background: currentPage === 1 ? 'var(--bg-secondary)' : '#ffffff',
+                color: currentPage === 1 ? 'var(--text-muted)' : 'var(--text-primary)',
+                cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
+              }}
+            >
+              ‹ Prev
+            </button>
+
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
+              <button
+                key={pageNum}
+                type="button"
+                onClick={() => setCurrentPage(pageNum)}
+                style={{
+                  padding: '4px 10px',
+                  fontSize: 12,
+                  fontWeight: 700,
+                  borderRadius: 6,
+                  border: pageNum === currentPage ? 'none' : '1px solid var(--border-color)',
+                  background: pageNum === currentPage ? 'var(--primary)' : '#ffffff',
+                  color: pageNum === currentPage ? 'var(--text-on-primary)' : 'var(--text-primary)',
+                  cursor: 'pointer',
+                }}
+              >
+                {pageNum}
+              </button>
+            ))}
+
+            <button
+              type="button"
+              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages}
+              style={{
+                padding: '4px 10px',
+                fontSize: 12,
+                fontWeight: 600,
+                borderRadius: 6,
+                border: '1px solid var(--border-color)',
+                background: currentPage === totalPages ? 'var(--bg-secondary)' : '#ffffff',
+                color: currentPage === totalPages ? 'var(--text-muted)' : 'var(--text-primary)',
+                cursor: currentPage === totalPages ? 'not-allowed' : 'pointer',
+              }}
+            >
+              Next ›
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setCurrentPage(totalPages)}
+              disabled={currentPage === totalPages}
+              style={{
+                padding: '4px 10px',
+                fontSize: 12,
+                fontWeight: 600,
+                borderRadius: 6,
+                border: '1px solid var(--border-color)',
+                background: currentPage === totalPages ? 'var(--bg-secondary)' : '#ffffff',
+                color: currentPage === totalPages ? 'var(--text-muted)' : 'var(--text-primary)',
+                cursor: currentPage === totalPages ? 'not-allowed' : 'pointer',
+              }}
+              title="Last Page"
+            >
+              ⏭ Last
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -112,10 +112,19 @@ export function DashboardPage() {
   const totalRecords = datasets.reduce((sum, d) => sum + d.recordCount, 0);
   const recent = templates.slice(0, 5);
 
-  const handleCreateNew = async (source: 'blank' | 'shinecraft', templateName: string) => {
+  const handleCreateNew = async (
+    source: 'blank' | 'shinecraft',
+    templateName: string,
+    options?: {
+      includeHeader?: boolean;
+      includeFooter?: boolean;
+      headerHtml?: string;
+      footerHtml?: string;
+    }
+  ) => {
     setCreating(true);
     try {
-      const record = await api.createFromStarter(source, templateName);
+      const record = await api.createFromStarter(source, templateName, options);
       setShowNewDialog(false);
       navigate(`/create/${record.id}`);
     } catch (err: any) {

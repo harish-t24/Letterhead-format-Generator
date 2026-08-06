@@ -8,6 +8,7 @@ import { TemplateInfoPanel } from '../components/editor/TemplateInfoPanel';
 import { useDebouncedValue } from '../hooks/useDebouncedValue';
 import * as api from '../services/api';
 import type { TemplateRecord } from '../types/template';
+import { HEADER_PRESETS, FOOTER_PRESETS } from '../assets/header-footer-presets';
 
 type SaveStatus = 'idle' | 'typing' | 'saving' | 'saved' | 'error';
 
@@ -65,16 +66,12 @@ export function TemplateCreatorPage() {
       setMarginRight(t.marginRight ?? DEFAULT_RIGHT);
 
       // Extract header state
-      if (t.headerHtml) {
+      if (t.headerHtml && t.headerHtml.trim()) {
         setHasHeader(true);
-        const imgMatch = t.headerHtml.match(/<img[^>]+src=["'](data:image\/[^"']+)["']/i);
+        const imgMatch = t.headerHtml.match(/<img[^>]+src=["']([^"']+)["']/i);
         if (imgMatch) {
           setHeaderEditType('image');
           setHeaderImgVal(imgMatch[1]);
-          const wMatch = t.headerHtml.match(/width=["'](\d+)["']/i);
-          const hMatch = t.headerHtml.match(/height=["'](\d+)["']/i);
-          if (wMatch) setHeaderW(parseInt(wMatch[1], 10));
-          if (hMatch) setHeaderH(parseInt(hMatch[1], 10));
         } else {
           setHeaderEditType('html');
           setHeaderVal(t.headerHtml);
@@ -86,16 +83,12 @@ export function TemplateCreatorPage() {
       }
 
       // Extract footer state
-      if (t.footerHtml) {
+      if (t.footerHtml && t.footerHtml.trim()) {
         setHasFooter(true);
-        const imgMatch = t.footerHtml.match(/<img[^>]+src=["'](data:image\/[^"']+)["']/i);
+        const imgMatch = t.footerHtml.match(/<img[^>]+src=["']([^"']+)["']/i);
         if (imgMatch) {
           setFooterEditType('image');
           setFooterImgVal(imgMatch[1]);
-          const wMatch = t.footerHtml.match(/width=["'](\d+)["']/i);
-          const hMatch = t.footerHtml.match(/height=["'](\d+)["']/i);
-          if (wMatch) setFooterW(parseInt(wMatch[1], 10));
-          if (hMatch) setFooterH(parseInt(hMatch[1], 10));
         } else {
           setFooterEditType('html');
           setFooterVal(t.footerHtml);
@@ -274,26 +267,24 @@ export function TemplateCreatorPage() {
       const base64 = reader.result as string;
       const img = new Image();
       img.onload = () => {
-        let width = img.width;
-        let height = img.height;
-        const maxHeight = type === 'header' ? 60 : 30;
-
-        if (height > maxHeight) {
-          width = Math.round((width * maxHeight) / height);
-          height = maxHeight;
-        }
+        const width = img.width;
+        const height = img.height;
 
         if (type === 'header') {
+          setHasHeader(true);
+          setHeaderEditType('image');
           setHeaderImgVal(base64);
           setHeaderW(width);
           setHeaderH(height);
-          const finalHeader = `<p style="text-align:center; margin:0; padding:0; width:100%;"><img src="${base64}" style="width:100%; display:block; margin:0; padding:0;" /></p>`;
+          const finalHeader = `<p style="text-align:center; margin:0; padding:0; width:100%;"><img src="${base64}" style="width:100%; height:auto; display:block; margin:0 auto; padding:0;" /></p>`;
           handleSaveHeaderFooter(finalHeader, undefined);
         } else {
+          setHasFooter(true);
+          setFooterEditType('image');
           setFooterImgVal(base64);
           setFooterW(width);
           setFooterH(height);
-          const finalFooter = `<p style="text-align:center; margin:0; padding:0; width:100%;"><img src="${base64}" style="width:100%; display:block; margin:0; padding:0;" /></p>`;
+          const finalFooter = `<p style="text-align:center; margin:0; padding:0; width:100%;"><img src="${base64}" style="width:100%; height:auto; display:block; margin:0 auto; padding:0;" /></p>`;
           handleSaveHeaderFooter(undefined, finalFooter);
         }
       };
@@ -763,20 +754,49 @@ export function TemplateCreatorPage() {
                           style={textareaStyle}
                         />
                       ) : (
-                        <div style={uploadContainerStyle}>
-                          {headerImgVal ? (
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                              <img src={headerImgVal} alt="Header Preview" style={{ maxHeight: 60, borderRadius: 4, border: '1px solid var(--border-color)' }} />
-                              <button type="button" onClick={handleHeaderImageClear} style={dangerBtnStyle}>
-                                Remove Logo
-                              </button>
-                            </div>
-                          ) : (
-                            <label style={uploadBtnStyle}>
-                              📤 Upload Header Logo
-                              <input type="file" accept="image/*" hidden onChange={(e) => handleImageUpload(e, 'header')} />
-                            </label>
-                          )}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                          <div style={{ fontWeight: 600, fontSize: 13, color: 'var(--text-secondary)' }}>
+                            Choose Header Preset or Upload Custom Image:
+                          </div>
+                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
+                            {HEADER_PRESETS.map((hp) => (
+                              <div
+                                key={hp.id}
+                                onClick={() => {
+                                  setHasHeader(true);
+                                  setHeaderEditType('image');
+                                  setHeaderImgVal(hp.dataUri);
+                                  handleSaveHeaderFooter(hp.html, undefined);
+                                }}
+                                style={{
+                                  border: headerImgVal === hp.dataUri ? '2px solid var(--primary)' : '1px solid var(--border-color)',
+                                  borderRadius: 'var(--radius-sm)',
+                                  padding: 8,
+                                  cursor: 'pointer',
+                                  background: 'var(--bg-surface)',
+                                  textAlign: 'center',
+                                }}
+                              >
+                                <img src={hp.dataUri} alt={hp.name} style={{ width: '100%', height: 32, objectFit: 'cover', borderRadius: 4, marginBottom: 4 }} />
+                                <div style={{ fontSize: 11, fontWeight: 600 }}>{hp.name.split(':')[0]}</div>
+                              </div>
+                            ))}
+                          </div>
+                          <div style={uploadContainerStyle}>
+                            {headerImgVal ? (
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                                <img src={headerImgVal} alt="Header Preview" style={{ maxHeight: 60, borderRadius: 4, border: '1px solid var(--border-color)' }} />
+                                <button type="button" onClick={handleHeaderImageClear} style={dangerBtnStyle}>
+                                  Remove Header Image
+                                </button>
+                              </div>
+                            ) : (
+                              <label style={uploadBtnStyle}>
+                                📤 Upload Custom Header Image
+                                <input type="file" accept="image/*" hidden onChange={(e) => handleImageUpload(e, 'header')} />
+                              </label>
+                            )}
+                          </div>
                         </div>
                       )}
                     </div>
@@ -830,20 +850,49 @@ export function TemplateCreatorPage() {
                           style={textareaStyle}
                         />
                       ) : (
-                        <div style={uploadContainerStyle}>
-                          {footerImgVal ? (
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                              <img src={footerImgVal} alt="Footer Preview" style={{ maxHeight: 30, borderRadius: 4, border: '1px solid var(--border-color)' }} />
-                              <button type="button" onClick={handleFooterImageClear} style={dangerBtnStyle}>
-                                Remove Logo
-                              </button>
-                            </div>
-                          ) : (
-                            <label style={uploadBtnStyle}>
-                              📤 Upload Footer Logo
-                              <input type="file" accept="image/*" hidden onChange={(e) => handleImageUpload(e, 'footer')} />
-                            </label>
-                          )}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                          <div style={{ fontWeight: 600, fontSize: 13, color: 'var(--text-secondary)' }}>
+                            Choose Footer Preset or Upload Custom Image:
+                          </div>
+                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
+                            {FOOTER_PRESETS.map((fp) => (
+                              <div
+                                key={fp.id}
+                                onClick={() => {
+                                  setHasFooter(true);
+                                  setFooterEditType('image');
+                                  setFooterImgVal(fp.dataUri);
+                                  handleSaveHeaderFooter(undefined, fp.html);
+                                }}
+                                style={{
+                                  border: footerImgVal === fp.dataUri ? '2px solid var(--primary)' : '1px solid var(--border-color)',
+                                  borderRadius: 'var(--radius-sm)',
+                                  padding: 8,
+                                  cursor: 'pointer',
+                                  background: 'var(--bg-surface)',
+                                  textAlign: 'center',
+                                }}
+                              >
+                                <img src={fp.dataUri} alt={fp.name} style={{ width: '100%', height: 24, objectFit: 'cover', borderRadius: 4, marginBottom: 4 }} />
+                                <div style={{ fontSize: 11, fontWeight: 600 }}>{fp.name.split(':')[0]}</div>
+                              </div>
+                            ))}
+                          </div>
+                          <div style={uploadContainerStyle}>
+                            {footerImgVal ? (
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                                <img src={footerImgVal} alt="Footer Preview" style={{ maxHeight: 30, borderRadius: 4, border: '1px solid var(--border-color)' }} />
+                                <button type="button" onClick={handleFooterImageClear} style={dangerBtnStyle}>
+                                  Remove Footer Image
+                                </button>
+                              </div>
+                            ) : (
+                              <label style={uploadBtnStyle}>
+                                📤 Upload Custom Footer Image
+                                <input type="file" accept="image/*" hidden onChange={(e) => handleImageUpload(e, 'footer')} />
+                              </label>
+                            )}
+                          </div>
                         </div>
                       )}
                     </div>

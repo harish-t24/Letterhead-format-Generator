@@ -50,6 +50,7 @@ const path = __importStar(require("path"));
 const mammoth = __importStar(require("mammoth"));
 const placeholder_parser_1 = require("./utils/placeholder-parser");
 const docx_builder_1 = require("./utils/docx-builder");
+const docx_importer_1 = require("./utils/docx-importer");
 const starter_templates_1 = require("./starters/starter-templates");
 const STORAGE_DIR = path.join(process.cwd(), 'storage', 'uploads');
 const METADATA_FILE = path.join(process.cwd(), 'storage', 'templates.json');
@@ -115,12 +116,11 @@ let TemplatesService = class TemplatesService {
         const id = (0, uuid_1.v4)();
         const docxPath = path.join(STORAGE_DIR, `${id}.docx`);
         fs.writeFileSync(docxPath, docxBuffer);
-        const { value: html } = await mammoth.convertToHtml({ buffer: docxBuffer });
-        const braceCheck = (0, placeholder_parser_1.validateBraces)(html);
+        const imported = await (0, docx_importer_1.parseDocxFull)(docxBuffer);
+        const braceCheck = (0, placeholder_parser_1.validateBraces)(imported.bodyHtml);
         if (!braceCheck.valid) {
             throw new Error(`Template has malformed placeholders: ${braceCheck.error}`);
         }
-        const placeholders = (0, placeholder_parser_1.extractPlaceholdersFromDocx)(docxBuffer);
         const now = new Date().toISOString();
         const baseName = originalName.replace(/\.docx$/i, '');
         const templateName = this.generateUniqueTemplateName(baseName);
@@ -129,8 +129,11 @@ let TemplatesService = class TemplatesService {
             templateName,
             originalName,
             docxPath,
-            html,
-            placeholders,
+            html: imported.html,
+            bodyHtml: imported.bodyHtml,
+            headerHtml: imported.headerHtml,
+            footerHtml: imported.footerHtml,
+            placeholders: imported.placeholders,
             source: 'imported',
             createdAt: now,
             updatedAt: now,
@@ -143,20 +146,20 @@ let TemplatesService = class TemplatesService {
         const starter = (0, starter_templates_1.getStarter)(source);
         const id = (0, uuid_1.v4)();
         const docxPath = path.join(STORAGE_DIR, `${id}.docx`);
-        const includeHeader = options?.includeHeader !== undefined ? options.includeHeader : starter.header;
-        const includeFooter = options?.includeFooter !== undefined ? options.includeFooter : starter.footer;
         const headerHtml = options?.headerHtml !== undefined ? options.headerHtml : starter.headerHtml;
         const footerHtml = options?.footerHtml !== undefined ? options.footerHtml : starter.footerHtml;
+        const includeHeader = options?.includeHeader !== undefined ? options.includeHeader : starter.header;
+        const includeFooter = options?.includeFooter !== undefined ? options.includeFooter : starter.footer;
         const DEFAULT_TOP = 5.4 / 2.54;
         const DEFAULT_BOTTOM = 0.63 / 2.54;
         const DEFAULT_LEFT = 2.16 / 2.54;
         const DEFAULT_RIGHT = 1.27 / 2.54;
         const docxBuffer = await (0, docx_builder_1.buildDocx)({
             bodyHtml: starter.bodyHtml,
-            headerHtml: headerHtml,
-            footerHtml: footerHtml,
-            includeHeader: includeHeader,
-            includeFooter: includeFooter,
+            headerHtml,
+            footerHtml,
+            includeHeader,
+            includeFooter,
             marginTop: DEFAULT_TOP,
             marginBottom: DEFAULT_BOTTOM,
             marginLeft: DEFAULT_LEFT,
@@ -164,27 +167,25 @@ let TemplatesService = class TemplatesService {
         });
         fs.writeFileSync(docxPath, docxBuffer);
         const { value: html } = await mammoth.convertToHtml({ buffer: docxBuffer });
-        const placeholders = (0, placeholder_parser_1.extractPlaceholdersFromDocx)(docxBuffer);
         const now = new Date().toISOString();
-        const requestedName = templateName?.trim() || starter.label;
-        const finalTemplateName = this.generateUniqueTemplateName(requestedName);
+        const uniqueName = this.generateUniqueTemplateName(templateName);
         const record = {
             id,
-            templateName: finalTemplateName,
-            originalName: `${starter.label}.docx`,
+            templateName: uniqueName,
+            originalName: `${templateName}.docx`,
             docxPath,
             html,
             bodyHtml: starter.bodyHtml,
-            headerHtml: includeHeader ? headerHtml : '',
-            footerHtml: includeFooter ? footerHtml : '',
-            placeholders,
-            source: source,
-            createdAt: now,
-            updatedAt: now,
+            headerHtml: includeHeader ? headerHtml : undefined,
+            footerHtml: includeFooter ? footerHtml : undefined,
             marginTop: DEFAULT_TOP,
             marginBottom: DEFAULT_BOTTOM,
             marginLeft: DEFAULT_LEFT,
             marginRight: DEFAULT_RIGHT,
+            placeholders: (0, placeholder_parser_1.extractPlaceholdersFromDocx)(docxBuffer),
+            source: source,
+            createdAt: now,
+            updatedAt: now,
         };
         this.templates.set(id, record);
         this.saveTemplates();
@@ -192,9 +193,6 @@ let TemplatesService = class TemplatesService {
     }
     async updateContent(id, bodyHtml, headerHtml, footerHtml, marginTop, marginBottom, marginLeft, marginRight) {
         const record = this.findOne(id);
-        if (record.source === 'imported') {
-            throw new Error('Imported templates cannot be edited this way — re-import instead.');
-        }
         const DEFAULT_TOP = 5.4 / 2.54;
         const DEFAULT_BOTTOM = 0.63 / 2.54;
         const DEFAULT_LEFT = 2.16 / 2.54;

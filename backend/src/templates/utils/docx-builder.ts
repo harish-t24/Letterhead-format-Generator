@@ -77,7 +77,6 @@ function makeHeaderFooterXmlMarginless(
       } else {
         xml = xml.replace(/<w:p>/g, `<w:p><w:pPr>${zeroIndentXml}</w:pPr>`);
       }
-      xml = xml.replace(/cx="\d+"/g, `cx="${fullWidthEmu}"`);
       return xml;
     };
 

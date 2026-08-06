@@ -6,9 +6,78 @@ type WrapMode = 'inline' | 'left' | 'right' | 'tight' | 'break' | 'behind' | 'fr
 
 function ResizableImageComponent(props: any) {
   const { node, updateAttributes, selected, deleteNode } = props;
-  const { src, alt, width = '100%', alignment = 'center', textWrap = 'inline' } = node.attrs;
+  const { src, alt, width = '100%', alignment = 'center', textWrap = 'inline', offsetX = 0, offsetY = 0 } = node.attrs;
   const imgRef = useRef<HTMLImageElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const [moveMode, setMoveMode] = React.useState<boolean>(false);
+
+  // Automatically reset move mode when image is deselected
+  React.useEffect(() => {
+    if (!selected) {
+      setMoveMode(false);
+    }
+  }, [selected]);
+
+  // Mouse Drag Handler for Moving Position (Free Movement - Gated by Move Mode)
+  const handleMoveMouseDown = (e: React.MouseEvent) => {
+    if (!moveMode) return;
+    e.preventDefault();
+    e.stopPropagation();
+
+    const startX = e.clientX;
+    const startY = e.clientY;
+    const startOffX = Number(offsetX) || 0;
+    const startOffY = Number(offsetY) || 0;
+
+    const onMouseMove = (moveEvent: MouseEvent) => {
+      const deltaX = moveEvent.clientX - startX;
+      const deltaY = moveEvent.clientY - startY;
+      updateAttributes({
+        offsetX: Math.round(startOffX + deltaX),
+        offsetY: Math.round(startOffY + deltaY),
+      });
+    };
+
+    const onMouseUp = () => {
+      document.removeEventListener('mousemove', onMouseMove);
+      document.removeEventListener('mouseup', onMouseUp);
+    };
+
+    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('mouseup', onMouseUp);
+  };
+
+  // Touch Event Drag Handler for Moving Position on Touch Devices
+  const handleMoveTouchStart = (e: React.TouchEvent) => {
+    if (!moveMode) return;
+    e.stopPropagation();
+    const touch = e.touches[0];
+    if (!touch) return;
+
+    const startX = touch.clientX;
+    const startY = touch.clientY;
+    const startOffX = Number(offsetX) || 0;
+    const startOffY = Number(offsetY) || 0;
+
+    const onTouchMove = (moveEvent: TouchEvent) => {
+      const moveTouch = moveEvent.touches[0];
+      if (!moveTouch) return;
+      const deltaX = moveTouch.clientX - startX;
+      const deltaY = moveTouch.clientY - startY;
+      updateAttributes({
+        offsetX: Math.round(startOffX + deltaX),
+        offsetY: Math.round(startOffY + deltaY),
+      });
+    };
+
+    const onTouchEnd = () => {
+      document.removeEventListener('touchmove', onTouchMove);
+      document.removeEventListener('touchend', onTouchEnd);
+    };
+
+    document.addEventListener('touchmove', onTouchMove, { passive: false });
+    document.addEventListener('touchend', onTouchEnd);
+  };
 
   // Mouse Drag Handler for Resizing
   const handleResize = (e: React.MouseEvent, corner: string) => {
@@ -80,12 +149,22 @@ function ResizableImageComponent(props: any) {
     updateAttributes({ textWrap: wrap });
   };
 
+  const handleResetPosition = () => {
+    updateAttributes({ offsetX: 0, offsetY: 0 });
+    setMoveMode(false);
+  };
+
   // Determine wrapper layout & text wrap styling
   const getWrapperStyle = (): React.CSSProperties => {
+    const tx = Number(offsetX) || 0;
+    const ty = Number(offsetY) || 0;
+    const transformStyle = (tx || ty) ? `translate3d(${tx}px, ${ty}px, 0px)` : 'none';
+
     const base: React.CSSProperties = {
       position: 'relative',
       userSelect: 'none',
       touchAction: 'manipulation',
+      transform: transformStyle,
     };
 
     if (textWrap === 'behind') {
@@ -94,7 +173,7 @@ function ResizableImageComponent(props: any) {
         position: 'absolute',
         left: alignment === 'left' ? '0' : alignment === 'right' ? 'auto' : '50%',
         right: alignment === 'right' ? '0' : 'auto',
-        transform: alignment === 'center' ? 'translateX(-50%)' : 'none',
+        transform: alignment === 'center' ? `translateX(-50%) ${transformStyle}` : transformStyle,
         zIndex: 0,
         opacity: 0.65,
         margin: 0,
@@ -108,7 +187,7 @@ function ResizableImageComponent(props: any) {
         position: 'absolute',
         left: alignment === 'left' ? '0' : alignment === 'right' ? 'auto' : '50%',
         right: alignment === 'right' ? '0' : 'auto',
-        transform: alignment === 'center' ? 'translateX(-50%)' : 'none',
+        transform: alignment === 'center' ? `translateX(-50%) ${transformStyle}` : transformStyle,
         zIndex: 25,
         margin: 0,
         display: 'inline-block',
@@ -170,21 +249,27 @@ function ResizableImageComponent(props: any) {
     return 'center';
   };
 
+  const hasOffset = !!offsetX || !!offsetY;
+
   return (
     <NodeViewWrapper ref={containerRef} style={getWrapperStyle()}>
       <div
-        data-drag-handle
+        onMouseDown={handleMoveMouseDown}
+        onTouchStart={handleMoveTouchStart}
         style={{
           position: 'relative',
           display: 'inline-block',
           width: width,
           maxWidth: '100%',
-          outline: selected ? '2px solid var(--primary)' : 'none',
+          outline: moveMode
+            ? '2px dashed #4f46e5'
+            : (selected ? '2px solid var(--primary)' : 'none'),
           outlineOffset: '2px',
           borderRadius: 4,
           transition: 'outline 0.15s ease',
-          cursor: 'grab',
+          cursor: moveMode ? 'move' : 'pointer',
         }}
+        title={moveMode ? 'Drag & Move Mode Active - Click & Drag to Move' : 'Click image to open tools'}
       >
         <img
           ref={imgRef}
@@ -203,12 +288,36 @@ function ResizableImageComponent(props: any) {
           }}
         />
 
+        {/* Floating Move Status Badge when Move Mode is ON */}
+        {selected && moveMode && (
+          <div
+            style={{
+              position: 'absolute',
+              top: -24,
+              left: '50%',
+              transform: 'translateX(-50%)',
+              background: '#4f46e5',
+              color: '#ffffff',
+              fontSize: 10,
+              fontWeight: 700,
+              padding: '2px 8px',
+              borderRadius: 4,
+              boxShadow: '0 2px 6px rgba(0,0,0,0.3)',
+              pointerEvents: 'none',
+              whiteSpace: 'nowrap',
+              zIndex: 10,
+            }}
+          >
+            ✥ Drag & Move Enabled ({offsetX || 0}px, {offsetY || 0}px)
+          </div>
+        )}
+
         {/* Word-Style Floating Image & Text Wrap Toolbar */}
         {selected && (
           <div
             style={{
               position: 'absolute',
-              top: -46,
+              top: -56,
               left: '50%',
               transform: 'translateX(-50%)',
               zIndex: 100,
@@ -228,6 +337,46 @@ function ResizableImageComponent(props: any) {
             onClick={(e) => e.stopPropagation()}
             onTouchStart={(e) => e.stopPropagation()}
           >
+            <button
+              type="button"
+              onClick={() => setMoveMode((prev) => !prev)}
+              style={{
+                background: moveMode ? '#4f46e5' : '#334155',
+                color: 'white',
+                border: moveMode ? '1px solid #818cf8' : 'none',
+                padding: '3px 8px',
+                borderRadius: 4,
+                cursor: 'pointer',
+                fontSize: 11,
+                fontWeight: 700,
+                boxShadow: moveMode ? '0 0 8px rgba(99, 102, 241, 0.5)' : 'none',
+              }}
+              title="Click to enable or disable Drag & Move mode"
+            >
+              {moveMode ? '✥ Drag & Move (ON)' : '✥ Drag & Move'}
+            </button>
+
+            {hasOffset && (
+              <button
+                type="button"
+                onClick={handleResetPosition}
+                style={{
+                  background: '#64748b',
+                  color: 'white',
+                  border: 'none',
+                  padding: '3px 6px',
+                  borderRadius: 4,
+                  cursor: 'pointer',
+                  fontSize: 11,
+                }}
+                title="Reset position offset to 0"
+              >
+                ↺ Reset
+              </button>
+            )}
+
+            <div style={{ width: 1, height: 16, background: '#475569', margin: '0 2px' }} />
+
             <span style={{ fontWeight: 700, color: '#94a3b8', marginRight: 1 }}>SIZE:</span>
             {['25%', '50%', '75%', '100%'].map((pct) => (
               <button
@@ -260,11 +409,6 @@ function ResizableImageComponent(props: any) {
             <button
               type="button"
               onClick={() => handleTextWrap('inline')}
-              onTouchEnd={(e) => {
-                e.preventDefault();
-                handleTextWrap('inline');
-              }}
-              title="In Line With Text"
               style={{
                 background: textWrap === 'inline' ? 'var(--primary)' : '#334155',
                 color: 'white',
@@ -273,19 +417,14 @@ function ResizableImageComponent(props: any) {
                 borderRadius: 4,
                 cursor: 'pointer',
                 fontSize: 11,
-                touchAction: 'manipulation',
               }}
+              title="In Line with Text"
             >
-              📄 Inline
+              Inline
             </button>
             <button
               type="button"
               onClick={() => handleTextWrap('left')}
-              onTouchEnd={(e) => {
-                e.preventDefault();
-                handleTextWrap('left');
-              }}
-              title="Wrap Text Left (Square Left)"
               style={{
                 background: textWrap === 'left' ? 'var(--primary)' : '#334155',
                 color: 'white',
@@ -294,19 +433,14 @@ function ResizableImageComponent(props: any) {
                 borderRadius: 4,
                 cursor: 'pointer',
                 fontSize: 11,
-                touchAction: 'manipulation',
               }}
+              title="Square Left (Text wraps around)"
             >
-              ◀ Left
+              Square L
             </button>
             <button
               type="button"
               onClick={() => handleTextWrap('right')}
-              onTouchEnd={(e) => {
-                e.preventDefault();
-                handleTextWrap('right');
-              }}
-              title="Wrap Text Right (Square Right)"
               style={{
                 background: textWrap === 'right' ? 'var(--primary)' : '#334155',
                 color: 'white',
@@ -315,40 +449,14 @@ function ResizableImageComponent(props: any) {
                 borderRadius: 4,
                 cursor: 'pointer',
                 fontSize: 11,
-                touchAction: 'manipulation',
               }}
+              title="Square Right (Text wraps around)"
             >
-              ▶ Right
-            </button>
-            <button
-              type="button"
-              onClick={() => handleTextWrap('tight')}
-              onTouchEnd={(e) => {
-                e.preventDefault();
-                handleTextWrap('tight');
-              }}
-              title="Tight Wrap"
-              style={{
-                background: textWrap === 'tight' ? 'var(--primary)' : '#334155',
-                color: 'white',
-                border: 'none',
-                padding: '3px 6px',
-                borderRadius: 4,
-                cursor: 'pointer',
-                fontSize: 11,
-                touchAction: 'manipulation',
-              }}
-            >
-              📐 Tight
+              Square R
             </button>
             <button
               type="button"
               onClick={() => handleTextWrap('break')}
-              onTouchEnd={(e) => {
-                e.preventDefault();
-                handleTextWrap('break');
-              }}
-              title="Top and Bottom (Break Text)"
               style={{
                 background: textWrap === 'break' ? 'var(--primary)' : '#334155',
                 color: 'white',
@@ -357,19 +465,14 @@ function ResizableImageComponent(props: any) {
                 borderRadius: 4,
                 cursor: 'pointer',
                 fontSize: 11,
-                touchAction: 'manipulation',
               }}
+              title="Top and Bottom (Break line)"
             >
-              ⏬ Top/Bottom
+              Top/Bot
             </button>
             <button
               type="button"
               onClick={() => handleTextWrap('behind')}
-              onTouchEnd={(e) => {
-                e.preventDefault();
-                handleTextWrap('behind');
-              }}
-              title="Behind Text (Watermark Layer)"
               style={{
                 background: textWrap === 'behind' ? 'var(--primary)' : '#334155',
                 color: 'white',
@@ -378,19 +481,14 @@ function ResizableImageComponent(props: any) {
                 borderRadius: 4,
                 cursor: 'pointer',
                 fontSize: 11,
-                touchAction: 'manipulation',
               }}
+              title="Behind Text (Watermark mode)"
             >
-              🔤 Behind Text
+              Behind
             </button>
             <button
               type="button"
               onClick={() => handleTextWrap('front')}
-              onTouchEnd={(e) => {
-                e.preventDefault();
-                handleTextWrap('front');
-              }}
-              title="In Front of Text"
               style={{
                 background: textWrap === 'front' ? 'var(--primary)' : '#334155',
                 color: 'white',
@@ -399,184 +497,154 @@ function ResizableImageComponent(props: any) {
                 borderRadius: 4,
                 cursor: 'pointer',
                 fontSize: 11,
-                touchAction: 'manipulation',
               }}
+              title="In Front of Text (Floating stamp / seal mode)"
             >
-              🔝 In Front
+              Front
             </button>
-
-            {(textWrap === 'inline' || textWrap === 'behind' || textWrap === 'front') && (
-              <>
-                <div style={{ width: 1, height: 16, background: '#475569', margin: '0 2px' }} />
-                <span style={{ fontWeight: 700, color: '#94a3b8', marginRight: 1 }}>ALIGN:</span>
-                <button
-                  type="button"
-                  onClick={() => handleAlignment('left')}
-                  onTouchEnd={(e) => {
-                    e.preventDefault();
-                    handleAlignment('left');
-                  }}
-                  title="Align Left"
-                  style={{
-                    background: alignment === 'left' ? 'var(--primary)' : '#334155',
-                    color: 'white',
-                    border: 'none',
-                    padding: '3px 6px',
-                    borderRadius: 4,
-                    cursor: 'pointer',
-                    fontSize: 11,
-                    touchAction: 'manipulation',
-                  }}
-                >
-                  ⟸
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleAlignment('center')}
-                  onTouchEnd={(e) => {
-                    e.preventDefault();
-                    handleAlignment('center');
-                  }}
-                  title="Align Center"
-                  style={{
-                    background: alignment === 'center' ? 'var(--primary)' : '#334155',
-                    color: 'white',
-                    border: 'none',
-                    padding: '3px 6px',
-                    borderRadius: 4,
-                    cursor: 'pointer',
-                    fontSize: 11,
-                    touchAction: 'manipulation',
-                  }}
-                >
-                  ⟺
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleAlignment('right')}
-                  onTouchEnd={(e) => {
-                    e.preventDefault();
-                    handleAlignment('right');
-                  }}
-                  title="Align Right"
-                  style={{
-                    background: alignment === 'right' ? 'var(--primary)' : '#334155',
-                    color: 'white',
-                    border: 'none',
-                    padding: '3px 6px',
-                    borderRadius: 4,
-                    cursor: 'pointer',
-                    fontSize: 11,
-                    touchAction: 'manipulation',
-                  }}
-                >
-                  ⟹
-                </button>
-              </>
-            )}
 
             <div style={{ width: 1, height: 16, background: '#475569', margin: '0 2px' }} />
 
+            <span style={{ fontWeight: 700, color: '#94a3b8', marginRight: 1 }}>ALIGN:</span>
             <button
               type="button"
-              onClick={deleteNode}
-              onTouchEnd={(e) => {
-                e.preventDefault();
-                deleteNode();
-              }}
-              title="Delete Image"
+              onClick={() => handleAlignment('left')}
               style={{
-                background: '#ef4444',
+                background: alignment === 'left' ? 'var(--primary)' : '#334155',
                 color: 'white',
                 border: 'none',
                 padding: '3px 6px',
                 borderRadius: 4,
                 cursor: 'pointer',
                 fontSize: 11,
-                fontWeight: 600,
-                touchAction: 'manipulation',
               }}
+            >
+              Left
+            </button>
+            <button
+              type="button"
+              onClick={() => handleAlignment('center')}
+              style={{
+                background: alignment === 'center' ? 'var(--primary)' : '#334155',
+                color: 'white',
+                border: 'none',
+                padding: '3px 6px',
+                borderRadius: 4,
+                cursor: 'pointer',
+                fontSize: 11,
+              }}
+            >
+              Center
+            </button>
+            <button
+              type="button"
+              onClick={() => handleAlignment('right')}
+              style={{
+                background: alignment === 'right' ? 'var(--primary)' : '#334155',
+                color: 'white',
+                border: 'none',
+                padding: '3px 6px',
+                borderRadius: 4,
+                cursor: 'pointer',
+                fontSize: 11,
+              }}
+            >
+              Right
+            </button>
+
+            <div style={{ width: 1, height: 16, background: '#475569', margin: '0 2px' }} />
+
+            <button
+              type="button"
+              onClick={deleteNode}
+              style={{
+                background: '#ef4444',
+                color: 'white',
+                border: 'none',
+                padding: '3px 8px',
+                borderRadius: 4,
+                cursor: 'pointer',
+                fontSize: 11,
+                fontWeight: 700,
+              }}
+              title="Delete Image / Seal"
             >
               🗑️ Delete
             </button>
           </div>
         )}
 
-        {/* Drag Resize Handles on Selection (Mouse & Touch Enabled) */}
+        {/* 4-Corner Resizing Handles */}
         {selected && (
           <>
-            {/* Top-Left */}
             <div
               onMouseDown={(e) => handleResize(e, 'top-left')}
               onTouchStart={(e) => handleTouchStart(e, 'top-left')}
               style={{
                 position: 'absolute',
-                top: -6,
-                left: -6,
-                width: 14,
-                height: 14,
+                top: -5,
+                left: -5,
+                width: 10,
+                height: 10,
                 background: 'var(--primary)',
-                border: '2px solid white',
+                border: '1px solid white',
                 borderRadius: '50%',
                 cursor: 'nwse-resize',
-                zIndex: 10,
+                zIndex: 101,
                 boxShadow: '0 2px 4px rgba(0,0,0,0.3)',
                 touchAction: 'none',
               }}
             />
-            {/* Top-Right */}
             <div
               onMouseDown={(e) => handleResize(e, 'top-right')}
               onTouchStart={(e) => handleTouchStart(e, 'top-right')}
               style={{
                 position: 'absolute',
-                top: -6,
-                right: -6,
-                width: 14,
-                height: 14,
+                top: -5,
+                right: -5,
+                width: 10,
+                height: 10,
                 background: 'var(--primary)',
-                border: '2px solid white',
+                border: '1px solid white',
                 borderRadius: '50%',
                 cursor: 'nesw-resize',
-                zIndex: 10,
+                zIndex: 101,
                 boxShadow: '0 2px 4px rgba(0,0,0,0.3)',
                 touchAction: 'none',
               }}
             />
-            {/* Bottom-Left */}
             <div
               onMouseDown={(e) => handleResize(e, 'bottom-left')}
               onTouchStart={(e) => handleTouchStart(e, 'bottom-left')}
               style={{
                 position: 'absolute',
-                bottom: -6,
-                left: -6,
-                width: 14,
-                height: 14,
+                bottom: -5,
+                left: -5,
+                width: 10,
+                height: 10,
                 background: 'var(--primary)',
-                border: '2px solid white',
+                border: '1px solid white',
                 borderRadius: '50%',
                 cursor: 'nesw-resize',
-                zIndex: 10,
+                zIndex: 101,
                 boxShadow: '0 2px 4px rgba(0,0,0,0.3)',
                 touchAction: 'none',
               }}
             />
-            {/* Bottom-Right */}
             <div
               onMouseDown={(e) => handleResize(e, 'bottom-right')}
               onTouchStart={(e) => handleTouchStart(e, 'bottom-right')}
               style={{
                 position: 'absolute',
-                bottom: -6,
-                right: -6,
-                width: 14,
-                height: 14,
+                bottom: -5,
+                right: -5,
+                width: 10,
+                height: 10,
                 background: 'var(--primary)',
-                border: '2px solid white',
+                border: '1px solid white',
                 borderRadius: '50%',
                 cursor: 'nwse-resize',
-                zIndex: 10,
+                zIndex: 101,
                 boxShadow: '0 2px 4px rgba(0,0,0,0.3)',
                 touchAction: 'none',
               }}
@@ -643,6 +711,20 @@ export const ResizableImage = Node.create({
           };
         },
       },
+      offsetX: {
+        default: 0,
+        parseHTML: (element) => parseInt(element.getAttribute('data-offset-x') || element.style.left || '0', 10) || 0,
+        renderHTML: (attributes) => ({
+          'data-offset-x': attributes.offsetX || 0,
+        }),
+      },
+      offsetY: {
+        default: 0,
+        parseHTML: (element) => parseInt(element.getAttribute('data-offset-y') || element.style.top || '0', 10) || 0,
+        renderHTML: (attributes) => ({
+          'data-offset-y': attributes.offsetY || 0,
+        }),
+      },
     };
   },
 
@@ -660,6 +742,9 @@ export const ResizableImage = Node.create({
   renderHTML({ HTMLAttributes }) {
     const align = HTMLAttributes['data-alignment'] || 'center';
     const wrap = HTMLAttributes['data-text-wrap'] || 'inline';
+    const offX = Number(HTMLAttributes['data-offset-x']) || 0;
+    const offY = Number(HTMLAttributes['data-offset-y']) || 0;
+    const transformCss = (offX || offY) ? `transform: translate3d(${offX}px, ${offY}px, 0px);` : '';
 
     let floatStyle = 'none';
     let marginStyle = 'margin: 4px 8px; display: inline-block;';
@@ -696,13 +781,13 @@ export const ResizableImage = Node.create({
       'span',
       {
         class: `image-node-wrap wrap-${wrap}`,
-        style: `display: ${wrap === 'break' ? 'block' : 'inline-block'}; text-align: ${align}; position: ${positionStyle}; z-index: ${zIndexStyle};`,
+        style: `display: ${wrap === 'break' ? 'block' : 'inline-block'}; text-align: ${align}; position: ${positionStyle}; z-index: ${zIndexStyle}; ${transformCss}`,
       },
       [
         'img',
         mergeAttributes(HTMLAttributes, {
           align: wrap === 'left' || wrap === 'tight' ? 'left' : wrap === 'right' ? 'right' : undefined,
-          style: `width: ${HTMLAttributes.width || '100%'}; max-width: 100%; height: auto; float: ${floatStyle}; clear: ${clearStyle}; z-index: ${zIndexStyle}; position: ${positionStyle}; ${marginStyle}`,
+          style: `width: ${HTMLAttributes.width || '100%'}; max-width: 100%; height: auto; float: ${floatStyle}; clear: ${clearStyle}; z-index: ${zIndexStyle}; position: ${positionStyle}; ${marginStyle} ${transformCss}`,
         }),
       ],
     ];

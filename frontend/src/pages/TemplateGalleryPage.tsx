@@ -241,17 +241,15 @@ export function TemplateGalleryPage() {
                   >
                     ⚡ Merge Data
                   </button>
-                  {t.source !== 'imported' && (
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        navigate(`/create/${t.id}`);
-                      }}
-                      style={smallBtnOutline}
-                    >
-                      ✏️ Edit Layout
-                    </button>
-                  )}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigate(`/create/${t.id}`);
+                    }}
+                    style={smallBtnOutline}
+                  >
+                    ✏️ Edit Layout
+                  </button>
                   <a
                     onClick={(e) => e.stopPropagation()}
                     href={api.templateExportPdfUrl(t.id)}
@@ -306,17 +304,15 @@ export function TemplateGalleryPage() {
                       >
                         ⚡ Merge Data
                       </button>
-                      {t.source !== 'imported' && (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            navigate(`/create/${t.id}`);
-                          }}
-                          style={smallBtnOutline}
-                        >
-                          ✏️ Edit Layout
-                        </button>
-                      )}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate(`/create/${t.id}`);
+                        }}
+                        style={smallBtnOutline}
+                      >
+                        ✏️ Edit Layout
+                      </button>
                       <a
                         onClick={(e) => e.stopPropagation()}
                         href={api.templateExportPdfUrl(t.id)}

@@ -52,7 +52,6 @@ function makeHeaderFooterXmlMarginless(docxBuffer, marginTopInches, marginBottom
             else {
                 xml = xml.replace(/<w:p>/g, `<w:p><w:pPr>${zeroIndentXml}</w:pPr>`);
             }
-            xml = xml.replace(/cx="\d+"/g, `cx="${fullWidthEmu}"`);
             return xml;
         };
         if (zip.files['word/header1.xml']) {

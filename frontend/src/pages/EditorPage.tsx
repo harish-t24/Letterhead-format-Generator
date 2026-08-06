@@ -3,7 +3,6 @@ import { useParams, Link } from 'react-router-dom';
 import { useTemplateStore } from '../store/templateStore';
 import { useDataset } from '../hooks/useDataset';
 import { useDebouncedValue } from '../hooks/useDebouncedValue';
-import { PlaceholdersPanel } from '../components/editor/PlaceholdersPanel';
 import { DataTable } from '../components/table/DataTable';
 import { AddRowButton } from '../components/table/AddRowButton';
 import { PdfPreview } from '../components/preview/PdfPreview';
@@ -72,38 +71,13 @@ export function EditorPage() {
             <span>Created: {new Date(activeTemplate.createdAt).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}</span>
           </div>
         </div>
-        {activeTemplate.source !== 'imported' && (
-          <Link to={`/create/${activeTemplate.id}`} className="btn" style={{ background: 'var(--bg-secondary)', color: 'var(--text-secondary)' }}>
-            ✏️ Edit Content Layout
-          </Link>
-        )}
+        <Link to={`/create/${activeTemplate.id}`} className="btn" style={{ background: 'var(--bg-secondary)', color: 'var(--text-secondary)' }}>
+          ✏️ Edit Content Layout
+        </Link>
       </div>
 
       <div style={{ display: 'flex', gap: 24, marginTop: 24, alignItems: 'flex-start', flexWrap: 'wrap' }}>
-        {activeTemplate.source === 'imported' && (
-          <div className="app-card" style={{ padding: 20, width: 230, flexShrink: 0, position: 'sticky', top: 20, alignSelf: 'flex-start' }}>
-            <PlaceholdersPanel placeholders={activeTemplate.placeholders} readOnly />
-          </div>
-        )}
-
         <div style={{ flex: 1, minWidth: 320 }}>
-          {activeTemplate.source === 'imported' && (
-            <div style={{
-              fontSize: 13,
-              color: 'var(--warning)',
-              background: 'var(--warning-bg)',
-              border: '1px solid var(--warning)',
-              borderRadius: 'var(--radius-sm)',
-              padding: '12px 16px',
-              marginBottom: 16,
-              display: 'flex',
-              gap: 8,
-              alignItems: 'center',
-            }}>
-              <span>ℹ️</span>
-              <span>This is an imported DOCX template. Formatting is locked to preserve layout. Modify rows below to merge data.</span>
-            </div>
-          )}
 
           <div className="app-card" style={{ padding: 24 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>

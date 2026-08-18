@@ -5,7 +5,7 @@ import { useDataset } from '../hooks/useDataset';
 import { useDebouncedValue } from '../hooks/useDebouncedValue';
 import { DataTable } from '../components/table/DataTable';
 import { AddRowButton } from '../components/table/AddRowButton';
-import { PdfPreview } from '../components/preview/PdfPreview';
+import { A4DocumentPreview } from '../components/preview/A4DocumentPreview';
 import { AllRowsPreview } from '../components/preview/AllRowsPreview';
 import { PrintButton } from '../components/preview/PrintButton';
 import { TemplateInfoPanel } from '../components/editor/TemplateInfoPanel';
@@ -13,12 +13,25 @@ import * as api from '../services/api';
 
 type PreviewMode = 'single' | 'all';
 
+function mergeHtml(templateHtml?: string, rowData?: Record<string, string>): string {
+  if (!templateHtml) return '';
+  let merged = templateHtml;
+  if (rowData) {
+    for (const [key, val] of Object.entries(rowData)) {
+      const regex = new RegExp(`\\{${key.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')}\\}`, 'gi');
+      merged = merged.replace(regex, val ?? '');
+    }
+  }
+  return merged;
+}
+
 export function EditorPage() {
   const { templateId } = useParams<{ templateId: string }>();
   const { activeTemplate, setActiveTemplate } = useTemplateStore();
   const { rows, activeRowId, setActiveRowId, addEmptyRow, updateCell, deleteRow } =
     useDataset(templateId ?? null);
   const [previewMode, setPreviewMode] = useState<PreviewMode>('single');
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     if (templateId && activeTemplate?.id !== templateId) {
@@ -26,8 +39,6 @@ export function EditorPage() {
     }
   }, [templateId, activeTemplate, setActiveTemplate]);
 
-  // Debounce the row-id so the preview doesn't re-request on every keystroke
-  // (cell edits already commit on blur, but this protects rapid row switching too).
   const debouncedRowId = useDebouncedValue(activeRowId, 300);
 
   if (!activeTemplate) return <p style={{ padding: '2rem' }}>Loading template…</p>;
@@ -39,6 +50,26 @@ export function EditorPage() {
     templateId && debouncedRowId
       ? `${api.renderPdfUrl(templateId, debouncedRowId)}?t=${updatedAt}`
       : null;
+
+  const handleSaveTemplate = async () => {
+    if (!activeTemplate) return;
+    setIsSaving(true);
+    try {
+      const updated = await api.updateTemplateContent(
+        activeTemplate.id,
+        activeTemplate.bodyHtml ?? activeTemplate.html,
+        activeTemplate.headerHtml,
+        activeTemplate.footerHtml,
+        activeTemplate.marginTop,
+        activeTemplate.marginBottom,
+        activeTemplate.marginLeft,
+        activeTemplate.marginRight
+      );
+      setActiveTemplate(updated);
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   return (
     <div style={{ maxWidth: 1550, width: '100%', margin: '0 auto', padding: '2rem 1.5rem', boxSizing: 'border-box' }}>
@@ -71,14 +102,35 @@ export function EditorPage() {
             <span>Created: {new Date(activeTemplate.createdAt).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}</span>
           </div>
         </div>
-        <Link to={`/create/${activeTemplate.id}`} className="btn" style={{ background: 'var(--bg-secondary)', color: 'var(--text-secondary)' }}>
-          ✏️ Edit Content Layout
-        </Link>
+
+        <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+          <button
+            onClick={handleSaveTemplate}
+            disabled={isSaving}
+            style={{
+              padding: '8px 16px',
+              borderRadius: 'var(--radius-sm)',
+              border: 'none',
+              background: 'var(--primary)',
+              color: 'var(--text-on-primary)',
+              fontSize: 13,
+              fontWeight: 600,
+              cursor: 'pointer',
+              boxShadow: '0 4px 12px rgba(99, 102, 241, 0.2)',
+            }}
+          >
+            {isSaving ? 'Saving…' : '💾 Save Template'}
+          </button>
+          <Link to={`/create/${activeTemplate.id}`} className="btn" style={{ background: 'var(--bg-secondary)', color: 'var(--text-secondary)' }}>
+            ✏️ Edit Content Layout
+          </Link>
+        </div>
       </div>
 
       <div style={{ display: 'flex', gap: 24, marginTop: 24, alignItems: 'flex-start', flexWrap: 'wrap' }}>
         <div style={{ flex: 1, minWidth: 320 }}>
 
+          {/* Data Table */}
           <div className="app-card" style={{ padding: 24 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
               <h3 style={{ margin: 0 }}>Mail-Merge Data Table</h3>
@@ -96,7 +148,7 @@ export function EditorPage() {
             </div>
           </div>
 
-          {/* Merge & Preview Area */}
+          {/* Live Document Preview Area */}
           <div className="app-card" style={{ padding: 24, marginTop: 24 }}>
             <div
               style={{
@@ -203,9 +255,18 @@ export function EditorPage() {
 
             <div style={{ padding: '16px 0', minHeight: 200, display: 'flex', flexDirection: 'column', gap: 16, width: '100%', alignItems: 'center' }}>
               {previewMode === 'single' ? (
-                <PdfPreview pdfUrl={pdfUrl} />
+                <A4DocumentPreview
+                  readOnly
+                  bodyHtml={mergeHtml(activeTemplate.bodyHtml ?? activeTemplate.html, activeRow?.data)}
+                  headerHtml={mergeHtml(activeTemplate.headerHtml, activeRow?.data)}
+                  footerHtml={mergeHtml(activeTemplate.footerHtml, activeRow?.data)}
+                  marginTop={activeTemplate.marginTop}
+                  marginBottom={activeTemplate.marginBottom}
+                  marginLeft={activeTemplate.marginLeft}
+                  marginRight={activeTemplate.marginRight}
+                />
               ) : (
-                templateId && <AllRowsPreview templateId={templateId} rows={rows} />
+                templateId && <AllRowsPreview templateId={templateId} template={activeTemplate} rows={rows} />
               )}
             </div>
           </div>

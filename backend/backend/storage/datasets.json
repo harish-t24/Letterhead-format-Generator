@@ -118,8 +118,8 @@
         "stipend": "none"
       },
       "createdAt": "2026-07-30T05:16:06.391Z",
-      "updatedAt": "2026-08-09T11:41:45.331Z",
-      "lastUsedAt": "2026-08-09T11:44:46.564Z"
+      "updatedAt": "2026-07-31T10:28:44.700Z",
+      "lastUsedAt": "2026-08-03T09:47:20.714Z"
     },
     {
       "id": "a5add4fe-ca0c-4df2-85ea-f051afc2bc34",
@@ -155,77 +155,12 @@
   ],
   "60a7376b-285e-4134-8e24-fcfc669b2610": [
     {
-      "id": "348168a3-4983-4eb0-923a-1f22183b9684",
+      "id": "509f5150-e99d-4cf6-a1bd-04f8f6326064",
       "templateId": "60a7376b-285e-4134-8e24-fcfc669b2610",
       "data": {},
-      "createdAt": "2026-08-09T11:10:28.116Z",
-      "updatedAt": "2026-08-09T11:10:28.116Z",
-      "lastUsedAt": "2026-08-09T11:10:30.162Z"
-    }
-  ],
-  "0c9644cf-cf3e-4e93-93b2-b3263ec3a2e5": [
-    {
-      "id": "7a71c6d5-a0b9-4d2d-b50f-18d44a478c60",
-      "templateId": "0c9644cf-cf3e-4e93-93b2-b3263ec3a2e5",
-      "data": {
-        "name": "Harish",
-        "reg_no": "23TD0025",
-        "s_o": "Thirunavukkarasu",
-        "role": "Frontend Developer",
-        "from_date": "03/03/2026",
-        "to_date": "03/09/2026"
-      },
-      "createdAt": "2026-08-09T11:23:29.950Z",
-      "updatedAt": "2026-08-09T12:09:08.354Z",
-      "lastUsedAt": "2026-08-09T12:10:01.887Z"
-    }
-  ],
-  "b77eab76-cc8c-4119-b816-8336ea4bc96b": [
-    {
-      "id": "5b0adb74-0d69-4d72-8e86-8d2079b8555b",
-      "templateId": "b77eab76-cc8c-4119-b816-8336ea4bc96b",
-      "data": {
-        "Mr_Ms": "Mr",
-        "Customer_name": "Harish",
-        "street": "Senthamarai Nagar",
-        "district": "Villianur",
-        "state": "Puducherry",
-        "pin_code": "605110",
-        "Warranty_days": "1-Year",
-        "installed_date": "10/08/2026",
-        "Warranty_date_starts": "14/08/2026",
-        "Device_serial_no": "D1001",
-        "No": "24",
-        "date": "10/08/2026"
-      },
-      "createdAt": "2026-08-09T13:52:30.513Z",
-      "updatedAt": "2026-08-09T13:55:49.188Z",
-      "lastUsedAt": null
-    }
-  ],
-  "29277367-0e65-461e-a3f3-289e07d548af": [
-    {
-      "id": "2a880ec3-b9d0-422c-8e93-8cdeef00fe05",
-      "templateId": "29277367-0e65-461e-a3f3-289e07d548af",
-      "data": {
-        "Date": "10/08/2026",
-        "Mr_Ms": "Mr",
-        "name": "Harish",
-        "Father_name": "Thirunavukkarasu",
-        "H_No": "24",
-        "Street_name": "Senthamarai Nagar",
-        "Area": "Villianur",
-        "Contact_No": "7708911399",
-        "time_period": "6 months",
-        "DOJ": "03",
-        "MOJ": "March",
-        "YOJ": "2026",
-        "level": "Basic",
-        "Role": "Frontend Developer"
-      },
-      "createdAt": "2026-08-09T13:55:15.750Z",
-      "updatedAt": "2026-08-09T13:58:56.564Z",
-      "lastUsedAt": null
+      "createdAt": "2026-08-09T10:44:50.569Z",
+      "updatedAt": "2026-08-09T10:44:50.569Z",
+      "lastUsedAt": "2026-08-09T10:45:41.599Z"
     }
   ]
 }

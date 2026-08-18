@@ -65,7 +65,8 @@ async function bootstrap() {
     app.use((0, express_1.json)({ limit: '50mb' }));
     app.use((0, express_1.urlencoded)({ limit: '50mb', extended: true }));
     app.enableCors({
-        origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+        origin: true,
+        credentials: true,
     });
     const port = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
     await app.listen(port);

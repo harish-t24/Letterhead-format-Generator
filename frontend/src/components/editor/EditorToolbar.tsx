@@ -1,6 +1,6 @@
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import type { Editor } from '@tiptap/core';
-import { DEFAULT_SEAL_PNG, DEFAULT_SIGN_PNG } from '../../assets/default-seal-sign';
+import { SealSignDialog } from './SealSignDialog';
 
 interface Props {
   editor: Editor | null;
@@ -34,6 +34,8 @@ const groupStyle: React.CSSProperties = {
  */
 export function EditorToolbar({ editor }: Props) {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isSealSignOpen, setIsSealSignOpen] = useState(false);
+  const [sealSignInitialTab, setSealSignInitialTab] = useState<'seal' | 'sign'>('seal');
 
   if (!editor) return null;
 
@@ -266,16 +268,22 @@ export function EditorToolbar({ editor }: Props) {
         <button
           type="button"
           style={btnStyle(false)}
-          onClick={() => (editor.chain().focus() as any).setImage({ src: DEFAULT_SEAL_PNG, alt: 'Official Seal' }).run()}
-          title="Put Official Seal Image at cursor"
+          onClick={() => {
+            setSealSignInitialTab('seal');
+            setIsSealSignOpen(true);
+          }}
+          title="Put Official Seal Image at cursor with custom alignment"
         >
           🏵️ Put Seal
         </button>
         <button
           type="button"
           style={btnStyle(false)}
-          onClick={() => (editor.chain().focus() as any).setImage({ src: DEFAULT_SIGN_PNG, alt: 'Authorized Signatory' }).run()}
-          title="Place Signature Image at cursor"
+          onClick={() => {
+            setSealSignInitialTab('sign');
+            setIsSealSignOpen(true);
+          }}
+          title="Place Signature Image at cursor with custom alignment"
         >
           ✍️ Place Sign
         </button>
@@ -285,6 +293,17 @@ export function EditorToolbar({ editor }: Props) {
           accept="image/*"
           hidden
           onChange={handleImageFileChange}
+        />
+        <SealSignDialog
+          isOpen={isSealSignOpen}
+          initialTab={sealSignInitialTab}
+          onClose={() => setIsSealSignOpen(false)}
+          onApplySeal={(sealHtml) => {
+            editor.chain().focus().insertContent(sealHtml).run();
+          }}
+          onApplySignature={(signHtml) => {
+            editor.chain().focus().insertContent(signHtml).run();
+          }}
         />
       </div>
 

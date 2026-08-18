@@ -64,7 +64,58 @@ let RenderService = RenderService_1 = class RenderService {
             this.logger.error(`Merge failed: ${details}`);
             throw new common_1.BadRequestException(`Template merge failed: ${details}`);
         }
-        return doc.getZip().generate({ type: 'nodebuffer' });
+        const mergedDocx = doc.getZip().generate({ type: 'nodebuffer' });
+        return this.fixLetterheadLayout(mergedDocx);
+    }
+    fixLetterheadLayout(docxBuffer) {
+        try {
+            const zip = new pizzip_1.default(docxBuffer);
+            if (!zip.files['word/document.xml'])
+                return docxBuffer;
+            let docXml = zip.files['word/document.xml'].asText();
+            docXml = docXml.replace(/<w:pgMar\b([^>]*)\/>/g, (full, attrs) => {
+                let updated = attrs;
+                updated = updated.replace(/\s+w:header="[^"]*"/, ' w:header="0"');
+                updated = updated.replace(/\s+w:footer="[^"]*"/, ' w:footer="0"');
+                if (!/\bw:header="/.test(updated))
+                    updated += ' w:header="0"';
+                if (!/\bw:footer="/.test(updated))
+                    updated += ' w:footer="0"';
+                return `<w:pgMar${updated}/>`;
+            });
+            zip.file('word/document.xml', docXml);
+            const hfFiles = [
+                'word/header1.xml', 'word/header2.xml', 'word/header3.xml',
+                'word/footer1.xml', 'word/footer2.xml', 'word/footer3.xml',
+            ];
+            for (const fileName of hfFiles) {
+                if (!zip.files[fileName])
+                    continue;
+                let xml = zip.files[fileName].asText();
+                xml = xml.replace(/<wp:positionH\s+relativeFrom="[^"]*">/g, '<wp:positionH relativeFrom="page">');
+                xml = xml.replace(/<wp:positionV\s+relativeFrom="[^"]*">/g, '<wp:positionV relativeFrom="page">');
+                xml = xml.replace(/allowOverlap="0"/g, 'allowOverlap="1"');
+                xml = xml.replace(/margin-left:\s*[\d\.]+(?:pt|px|in)/g, 'margin-left:0pt');
+                xml = xml.replace(/margin-right:\s*[\d\.]+(?:pt|px|in)/g, 'margin-right:0pt');
+                zip.file(fileName, xml);
+            }
+            return zip.generate({ type: 'nodebuffer' });
+        }
+        catch {
+            return docxBuffer;
+        }
+    }
+    mergeHtml(html, rowData) {
+        if (!html)
+            return '';
+        let result = html;
+        if (rowData) {
+            for (const [key, val] of Object.entries(rowData)) {
+                const regex = new RegExp(`\\{${key.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')}\\}`, 'gi');
+                result = result.replace(regex, val ?? '');
+            }
+        }
+        return result;
     }
 };
 exports.RenderService = RenderService;

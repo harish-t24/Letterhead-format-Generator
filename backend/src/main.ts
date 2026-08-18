@@ -36,7 +36,8 @@ async function bootstrap() {
 
   // Allow the Vite dev server (frontend) to call this API.
   app.enableCors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+    origin: true,
+    credentials: true,
   });
 
   const port = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;

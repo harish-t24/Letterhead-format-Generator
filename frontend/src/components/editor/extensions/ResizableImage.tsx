@@ -666,16 +666,23 @@ export const ResizableImage = Node.create({
     return {
       src: {
         default: null,
+        parseHTML: (element) => element.getAttribute('src') || element.querySelector('img')?.getAttribute('src') || null,
       },
       alt: {
         default: null,
+        parseHTML: (element) => element.getAttribute('alt') || element.querySelector('img')?.getAttribute('alt') || null,
       },
       title: {
         default: null,
+        parseHTML: (element) => element.getAttribute('title') || element.querySelector('img')?.getAttribute('title') || null,
       },
       width: {
         default: '100%',
-        parseHTML: (element) => element.getAttribute('width') || element.style.width || '100%',
+        parseHTML: (element) => {
+          const img = element.tagName.toLowerCase() === 'img' ? element : element.querySelector('img');
+          const target = img || element;
+          return target.getAttribute('width') || target.style.width || element.getAttribute('width') || element.style.width || '100%';
+        },
         renderHTML: (attributes) => {
           if (!attributes.width) return {};
           return {
@@ -685,7 +692,16 @@ export const ResizableImage = Node.create({
       },
       alignment: {
         default: 'center',
-        parseHTML: (element) => element.getAttribute('data-alignment') || element.style.textAlign || 'center',
+        parseHTML: (element) => {
+          const img = element.tagName.toLowerCase() === 'img' ? element : element.querySelector('img');
+          const dataAlign = element.getAttribute('data-alignment') || img?.getAttribute('data-alignment');
+          if (dataAlign) return dataAlign;
+          const textAlign = element.style.textAlign || (img as HTMLElement)?.style?.textAlign;
+          if (textAlign && (textAlign === 'left' || textAlign === 'right' || textAlign === 'center')) return textAlign;
+          const parentAlign = (element as HTMLElement).parentElement?.style?.textAlign;
+          if (parentAlign && (parentAlign === 'left' || parentAlign === 'right' || parentAlign === 'center')) return parentAlign;
+          return 'center';
+        },
         renderHTML: (attributes) => {
           return {
             'data-alignment': attributes.alignment || 'center',
@@ -695,14 +711,16 @@ export const ResizableImage = Node.create({
       textWrap: {
         default: 'inline',
         parseHTML: (element) => {
-          const wrapAttr = element.getAttribute('data-text-wrap');
+          const img = element.tagName.toLowerCase() === 'img' ? element : element.querySelector('img');
+          const wrapAttr = element.getAttribute('data-text-wrap') || img?.getAttribute('data-text-wrap');
           if (wrapAttr) return wrapAttr;
-          const floatVal = element.style.float || element.getAttribute('align');
+          const target = img || element;
+          const floatVal = target.style.float || target.getAttribute('align') || element.style.float;
           if (floatVal === 'left') return 'left';
           if (floatVal === 'right') return 'right';
-          if (element.style.clear === 'both') return 'break';
-          if (element.style.position === 'absolute' && element.style.zIndex === '0') return 'behind';
-          if (element.style.position === 'absolute' && element.style.zIndex === '25') return 'front';
+          if (target.style.clear === 'both' || element.style.clear === 'both') return 'break';
+          if (target.style.position === 'absolute' && target.style.zIndex === '0') return 'behind';
+          if (target.style.position === 'absolute' && target.style.zIndex === '25') return 'front';
           return 'inline';
         },
         renderHTML: (attributes) => {
@@ -713,14 +731,20 @@ export const ResizableImage = Node.create({
       },
       offsetX: {
         default: 0,
-        parseHTML: (element) => parseInt(element.getAttribute('data-offset-x') || element.style.left || '0', 10) || 0,
+        parseHTML: (element) => {
+          const img = element.tagName.toLowerCase() === 'img' ? element : element.querySelector('img');
+          return parseInt(element.getAttribute('data-offset-x') || img?.getAttribute('data-offset-x') || element.style.left || '0', 10) || 0;
+        },
         renderHTML: (attributes) => ({
           'data-offset-x': attributes.offsetX || 0,
         }),
       },
       offsetY: {
         default: 0,
-        parseHTML: (element) => parseInt(element.getAttribute('data-offset-y') || element.style.top || '0', 10) || 0,
+        parseHTML: (element) => {
+          const img = element.tagName.toLowerCase() === 'img' ? element : element.querySelector('img');
+          return parseInt(element.getAttribute('data-offset-y') || img?.getAttribute('data-offset-y') || element.style.top || '0', 10) || 0;
+        },
         renderHTML: (attributes) => ({
           'data-offset-y': attributes.offsetY || 0,
         }),
@@ -731,10 +755,17 @@ export const ResizableImage = Node.create({
   parseHTML() {
     return [
       {
-        tag: 'img[src]',
+        tag: 'span.image-node-wrap',
+        getAttrs: (element) => {
+          const dom = element as HTMLElement;
+          if (!dom.querySelector('img') && !dom.getAttribute('data-text-wrap')) {
+            return false;
+          }
+          return null;
+        },
       },
       {
-        tag: 'span[data-text-wrap]',
+        tag: 'img[src]',
       },
     ];
   },
@@ -744,6 +775,7 @@ export const ResizableImage = Node.create({
     const wrap = HTMLAttributes['data-text-wrap'] || 'inline';
     const offX = Number(HTMLAttributes['data-offset-x']) || 0;
     const offY = Number(HTMLAttributes['data-offset-y']) || 0;
+    const width = HTMLAttributes.width || '100%';
     const transformCss = (offX || offY) ? `transform: translate3d(${offX}px, ${offY}px, 0px);` : '';
 
     let floatStyle = 'none';
@@ -782,12 +814,20 @@ export const ResizableImage = Node.create({
       {
         class: `image-node-wrap wrap-${wrap}`,
         style: `display: ${wrap === 'break' ? 'block' : 'inline-block'}; text-align: ${align}; position: ${positionStyle}; z-index: ${zIndexStyle}; ${transformCss}`,
+        'data-alignment': align,
+        'data-text-wrap': wrap,
+        'data-offset-x': offX,
+        'data-offset-y': offY,
       },
       [
         'img',
         mergeAttributes(HTMLAttributes, {
-          align: wrap === 'left' || wrap === 'tight' ? 'left' : wrap === 'right' ? 'right' : undefined,
-          style: `width: ${HTMLAttributes.width || '100%'}; max-width: 100%; height: auto; float: ${floatStyle}; clear: ${clearStyle}; z-index: ${zIndexStyle}; position: ${positionStyle}; ${marginStyle} ${transformCss}`,
+          align: wrap === 'left' || wrap === 'tight' ? 'left' : wrap === 'right' ? 'right' : align,
+          'data-alignment': align,
+          'data-text-wrap': wrap,
+          'data-offset-x': offX,
+          'data-offset-y': offY,
+          style: `width: ${width}; max-width: 100%; height: auto; float: ${floatStyle}; clear: ${clearStyle}; z-index: ${zIndexStyle}; position: ${positionStyle}; ${marginStyle} ${transformCss}`,
         }),
       ],
     ];

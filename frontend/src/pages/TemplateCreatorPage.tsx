@@ -2,10 +2,10 @@ import { useEffect, useRef, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { TemplateCreatorEditor } from '../components/editor/TemplateCreatorEditor';
 import type { TemplateCreatorEditorHandle } from '../components/editor/TemplateCreatorEditor';
-import { A4DocumentPreview } from '../components/preview/A4DocumentPreview';
 import { PlaceholdersPanel } from '../components/editor/PlaceholdersPanel';
 import { TemplateInfoPanel } from '../components/editor/TemplateInfoPanel';
 import { useDebouncedValue } from '../hooks/useDebouncedValue';
+import { useTemplateStore } from '../store/templateStore';
 import * as api from '../services/api';
 import type { TemplateRecord } from '../types/template';
 import { HEADER_PRESETS, FOOTER_PRESETS } from '../assets/header-footer-presets';
@@ -16,12 +16,12 @@ export function TemplateCreatorPage() {
   const { templateId } = useParams<{ templateId: string }>();
   const navigate = useNavigate();
   const editorRef = useRef<TemplateCreatorEditorHandle>(null);
+  const { upsertTemplate } = useTemplateStore();
 
   const [template, setTemplate] = useState<TemplateRecord | null>(null);
   const [nameDraft, setNameDraft] = useState('');
   const [status, setStatus] = useState<SaveStatus>('idle');
-  const [previewNonce, setPreviewNonce] = useState(0);
-  const [showPreview, setShowPreview] = useState(false);
+  const [previewNonce, setPreviewNonce] = useState<number>(0);
 
   const [draftHtml, setDraftHtml] = useState<string | null>(null);
   const debouncedHtml = useDebouncedValue(draftHtml, 700);
@@ -320,22 +320,52 @@ export function TemplateCreatorPage() {
       const updated = await api.updateTemplateContent(templateId, html);
       lastSavedHtml.current = html;
       setTemplate(updated);
+      upsertTemplate(updated);
       setStatus('saved');
       setPreviewNonce((n) => n + 1);
     }
   };
 
-  const handlePreviewToggle = async () => {
-    if (!showPreview) await flushAndRefreshPreview();
-    setShowPreview((s) => !s);
+  const handleManualSave = async () => {
+    if (!templateId || !template) return;
+    setStatus('saving');
+    try {
+      const html = editorRef.current?.getHTML() ?? template.bodyHtml ?? template.html;
+      const headerToSend = hasHeader
+        ? (headerEditType === 'image' && headerImgVal
+            ? `<p style="text-align:center; margin:0; padding:0; width:100%;"><img src="${headerImgVal}" style="width:100%; display:block; margin:0;" /></p>`
+            : headerVal)
+        : '';
+      const footerToSend = hasFooter
+        ? (footerEditType === 'image' && footerImgVal
+            ? `<p style="text-align:center; margin:0; padding:0; width:100%;"><img src="${footerImgVal}" style="width:100%; display:block; margin:0;" /></p>`
+            : footerVal)
+        : '';
+
+      const updated = await api.updateTemplateContent(
+        templateId,
+        html,
+        headerToSend,
+        footerToSend,
+        marginTop,
+        marginBottom,
+        marginLeft,
+        marginRight
+      );
+      lastSavedHtml.current = html;
+      setTemplate(updated);
+      upsertTemplate(updated);
+      setStatus('saved');
+      setPreviewNonce((n) => n + 1);
+    } catch (err) {
+      setStatus('error');
+    }
   };
 
   const handleDownloadPdf = async () => {
     await flushAndRefreshPreview();
     window.open(`${api.templateExportPdfUrl(templateId)}?t=${Date.now()}`, '_blank');
   };
-
-  const previewUrl = `${api.templateExportPdfUrl(templateId)}?t=${previewNonce}`;
 
   const statusLabel: Record<SaveStatus, string> = {
     idle: '',
@@ -360,31 +390,15 @@ export function TemplateCreatorPage() {
         </Link>
       </div>
 
-      <div style={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: 24,
-        flexWrap: 'wrap',
-        gap: 16,
-        position: 'sticky',
-        top: 0,
-        zIndex: 100,
-        background: 'var(--bg-primary)',
-        backdropFilter: 'blur(8px)',
-        paddingTop: 12,
-        paddingBottom: 16,
-        borderBottom: '1px solid var(--border-color)',
-        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.04)',
-      }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24, flexWrap: 'wrap', gap: 16 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-          <span style={{ color: 'var(--text-muted)', fontSize: 14, fontWeight: 500 }}>Template —</span>
           <input
+            type="text"
             value={nameDraft}
             onChange={(e) => setNameDraft(e.target.value)}
             onBlur={handleRename}
             style={{
-              fontSize: '1.5rem',
+              fontSize: '1.75rem',
               fontWeight: 800,
               fontFamily: "'Outfit', sans-serif",
               border: 'none',
@@ -392,15 +406,12 @@ export function TemplateCreatorPage() {
               background: 'transparent',
               color: 'var(--text-primary)',
               outline: 'none',
-              padding: '2px 4px',
               transition: 'var(--transition)',
-              width: 'auto',
-              maxWidth: 320,
             }}
             onFocus={(e) => (e.target.style.borderBottom = '2px solid var(--primary)')}
             onBlurCapture={(e) => (e.target.style.borderBottom = '2px solid transparent')}
           />
-          <span className="badge" style={{ background: statusColor[status] + '15', color: statusColor[status], fontSize: 12, fontWeight: 700 }}>
+          <span key={previewNonce} className="badge" style={{ background: statusColor[status] + '15', color: statusColor[status], fontSize: 12, fontWeight: 700 }}>
             {statusLabel[status] || 'Idle'}
           </span>
           <TemplateInfoPanel
@@ -412,57 +423,45 @@ export function TemplateCreatorPage() {
             source={template.source}
           />
         </div>
-
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-        
+          <button onClick={handleManualSave} style={filledBtn}>
+            💾 Save Template
+          </button>
           <button onClick={handleDownloadPdf} style={outlineBtn}>
             📥 Download PDF
           </button>
-          <button onClick={handlePreviewToggle} style={outlineBtn}>
-            {showPreview ? '📝 Back to Edit' : '👁️ Preview Layout'}
-          </button>
-          <button onClick={() => navigate(`/editor/${templateId}`)} style={filledBtn}>
+          <button
+            onClick={async () => {
+              await handleManualSave();
+              navigate(`/editor/${templateId}`);
+            }}
+            style={filledBtn}
+          >
             Continue to Merging &rarr;
           </button>
         </div>
       </div>
 
       <div style={{ display: 'flex', gap: 28, alignItems: 'flex-start' }}>
-        {!showPreview && (
-          <div className="app-card" style={{ padding: 20, position: 'sticky', top: 90, alignSelf: 'flex-start' }}>
-            <PlaceholdersPanel
-              placeholders={template.placeholders}
-              onInsert={(name) => editorRef.current?.insertPlaceholder(name)}
-            />
-          </div>
-        )}
+        <div className="app-card" style={{ padding: 20, position: 'sticky', top: 90, alignSelf: 'flex-start' }}>
+          <PlaceholdersPanel
+            placeholders={template.placeholders}
+            onInsert={(name) => editorRef.current?.insertPlaceholder(name)}
+          />
+        </div>
 
         <div style={{ flex: 1, minWidth: 0 }}>
-          {showPreview ? (
-            <A4DocumentPreview
-              pdfUrl={previewUrl}
-              bodyHtml={template.bodyHtml ?? template.html}
-              headerHtml={template.headerHtml}
-              footerHtml={template.footerHtml}
-              marginTop={marginTop}
-              marginBottom={marginBottom}
-              marginLeft={marginLeft}
-              marginRight={marginRight}
-              nonce={previewNonce}
-            />
-          ) : (
-            <>
-               <TemplateCreatorEditor
-                ref={editorRef}
-                initialHtml={template.bodyHtml ?? template.html}
-                headerHtml={template.headerHtml}
-                footerHtml={template.footerHtml}
-                marginTop={marginTop}
-                marginBottom={marginBottom}
-                marginLeft={marginLeft}
-                marginRight={marginRight}
-                onChange={handleEditorChange}
-              />
+          <TemplateCreatorEditor
+            ref={editorRef}
+            initialHtml={template.bodyHtml ?? template.html}
+            headerHtml={template.headerHtml}
+            footerHtml={template.footerHtml}
+            marginTop={marginTop}
+            marginBottom={marginBottom}
+            marginLeft={marginLeft}
+            marginRight={marginRight}
+            onChange={handleEditorChange}
+          />
 
               {/* Page Margin Setup Panel */}
               <div className="app-card" style={{ marginTop: 24, padding: 24 }}>
@@ -899,8 +898,6 @@ export function TemplateCreatorPage() {
                   )}
                 </div>
               </div>
-            </>
-          )}
         </div>
       </div>
     </div>

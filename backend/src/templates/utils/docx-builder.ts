@@ -1,13 +1,7 @@
 import HTMLtoDOCX from 'html-to-docx';
-import PizZip from 'pizzip';
 
 /**
- * Builds a DOCX buffer from body/header/footer HTML.
- *
- * Margins are set so body text can never overlap the header or footer:
- * the top/bottom page margins (1440 twips = 1 inch) are comfortably
- * larger than the header/footer distance from the page edge (0 twips
- * = 0 inch), which is standard Word/LibreOffice practice.
+ * Preprocesses HTML tables to ensure clean border rendering.
  */
 function preprocessHtmlTables(html: string | undefined): string {
   if (!html) return '';
@@ -25,82 +19,86 @@ function preprocessHtmlTables(html: string | undefined): string {
   return processed;
 }
 
-function makeHeaderFooterXmlMarginless(
-  docxBuffer: Buffer,
-  marginTopInches: number,
-  marginBottomInches: number,
-  marginLeftInches: number,
-  marginRightInches: number,
-): Buffer {
-  try {
-    const zip = new PizZip(docxBuffer);
-    const marginTopDxa = Math.round(marginTopInches * 1440);
-    const marginBottomDxa = Math.round(marginBottomInches * 1440);
-    const marginLeftDxa = Math.round(marginLeftInches * 1440);
-    const marginRightDxa = Math.round(marginRightInches * 1440);
-    const fullWidthEmu = 7560310; // A4 full width 210mm in EMUs
+/**
+ * Preprocesses HTML image tags (seals, stamps, signatures, logos) so html-to-docx
+ * converts them into valid OpenXML drawing objects in the generated DOCX.
+ */
+function preprocessHtmlImages(html: string | undefined, isHeaderFooter: boolean = false): string {
+  if (!html) return '';
 
-    // 1. Process document.xml to apply margins exclusively to content
-    if (zip.files['word/document.xml']) {
-      let xml = zip.files['word/document.xml'].asText();
+  let processed = html;
 
-      // Ensure section page margins are zero for marginless header and footer
-      xml = xml.replace(/<w:pgMar[^>]*\/>/g, '<w:pgMar w:top="0" w:bottom="0" w:left="0" w:right="0" w:header="0" w:footer="0"/>');
+  // 1. Unwrap TipTap span.image-node-wrap while preserving text-align & alignment attributes
+  processed = processed.replace(
+    /<span\b([^>]*class="[^"]*image-node-wrap[^"]*"[^>]*)>(<img\b[^>]+>)<\/span>/gi,
+    (_full, spanAttrs, imgTag) => {
+      const alignMatch = spanAttrs.match(/data-alignment=["']([^"']+)["']/i) || spanAttrs.match(/text-align:\s*(left|center|right)/i);
+      const align = alignMatch ? alignMatch[1] : 'center';
 
-      const indXml = `<w:ind w:left="${marginLeftDxa}" w:right="${marginRightDxa}"/>`;
-      const topSpacingXml = `<w:spacing w:before="${marginTopDxa}"/>`;
-      
-      // Inject left & right indents into pPr blocks safely
-      xml = xml.replace(/<w:pPr>/g, `<w:pPr>${indXml}`);
-      xml = xml.replace(/<w:p>(?!<w:pPr>)/g, `<w:p><w:pPr>${indXml}</w:pPr>`);
+      const wrapMatch = spanAttrs.match(/data-text-wrap=["']([^"']+)["']/i);
+      const wrap = wrapMatch ? wrapMatch[1] : 'inline';
 
-      // Inject top spacing into the first pPr block
-      let firstDone = false;
-      xml = xml.replace(/<w:pPr>/g, (m) => {
-        if (!firstDone) {
-          firstDone = true;
-          return `<w:pPr>${topSpacingXml}`;
-        }
-        return m;
-      });
-
-      zip.file('word/document.xml', xml);
-    }
-
-    // 2. Process header1.xml and footer1.xml to ensure zero margin and full paper width
-    const zeroIndentXml = `<w:ind w:left="0" w:right="0" xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"/>`;
-
-    const fixHfXml = (xmlStr: string) => {
-      let xml = xmlStr;
-      if (xml.includes('<w:pPr>')) {
-        xml = xml.replace(/<w:pPr>/g, `<w:pPr>${zeroIndentXml}`);
-      } else {
-        xml = xml.replace(/<w:p>/g, `<w:p><w:pPr>${zeroIndentXml}</w:pPr>`);
+      if (wrap === 'left' || wrap === 'right' || wrap === 'tight') {
+        return `<p style="text-align:${wrap === 'right' ? 'right' : 'left'}; margin:6px 0; clear:both;">${imgTag}</p>`;
       }
-      return xml;
-    };
+      return `<p style="text-align:${align}; margin:6px 0; clear:both;">${imgTag}</p>`;
+    }
+  );
 
-    if (zip.files['word/header1.xml']) {
-      zip.file('word/header1.xml', fixHfXml(zip.files['word/header1.xml'].asText()));
+  // 2. Format img tags cleanly for html-to-docx
+  processed = processed.replace(/<img\b([^>]*)\/?>/gi, (full, attrs) => {
+    const srcMatch = attrs.match(/src=["']([^"']+)["']/i);
+    if (!srcMatch) return full;
+    const src = srcMatch[1];
+
+    const isFullWidth = /width:\s*100%/i.test(attrs) || /width=["']100%["']/i.test(attrs);
+
+    if (isHeaderFooter && isFullWidth) {
+      return `<img src="${src}" width="650" style="width:100%; display:block; margin:0 auto;" />`;
     }
 
-    if (zip.files['word/footer1.xml']) {
-      zip.file('word/footer1.xml', fixHfXml(zip.files['word/footer1.xml'].asText()));
-    }
+    let width = '';
+    const styleWidth = attrs.match(/width:\s*([\d]+)px/i);
+    const attrWidth = attrs.match(/width=["']([\d]+)["']/i);
+    if (styleWidth) width = styleWidth[1];
+    else if (attrWidth) width = attrWidth[1];
 
-    return zip.generate({ type: 'nodebuffer' }) as Buffer;
-  } catch (e) {
-    // If ZIP post-processing fails, return original buffer
-    return docxBuffer;
-  }
+    let height = '';
+    const styleHeight = attrs.match(/height:\s*([\d]+)px/i);
+    const attrHeight = attrs.match(/height=["']([\d]+)["']/i);
+    if (styleHeight) height = styleHeight[1];
+    else if (attrHeight) height = attrHeight[1];
+
+    const alignMatch = attrs.match(/align=["']([^"']+)["']/i);
+    const imgAlign = alignMatch ? alignMatch[1] : undefined;
+
+    const sizeAttrs = width ? `width="${width}" ${height ? `height="${height}"` : ''}` : 'width="160"';
+    const alignAttr = imgAlign ? `align="${imgAlign}"` : '';
+
+    return `<img src="${src}" ${sizeAttrs} ${alignAttr} style="display:inline-block; vertical-align:middle; background:transparent;" />`;
+  });
+
+  return processed;
 }
 
-function sanitizeHtmlForDocx(html?: string): string {
+/**
+ * Converts TipTap page breaks into standard html-to-docx page break tags
+ * so Word & Gotenberg render content after page breaks on the next page.
+ */
+function preprocessHtmlPageBreaks(html: string | undefined): string {
   if (!html) return '';
-  let cleaned = html;
-  // Remove data:image/svg+xml or unsupported image data URIs that break html-to-docx
-  cleaned = cleaned.replace(/<img[^>]*src=["']data:image\/(?!png|jpeg|jpg|gif)[^"']*["'][^>]*>/gi, '');
-  return cleaned;
+
+  let processed = html;
+
+  processed = processed.replace(/<div[^>]*class="[^"]*page-break[^"]*"[^>]*>.*?<\/div>/gi, '<div style="page-break-after: always; break-after: page;"><!-- pagebreak --></div>');
+  processed = processed.replace(/<hr[^>]*class="[^"]*page-break[^"]*"[^>]*\/?>/gi, '<div style="page-break-after: always; break-after: page;"><!-- pagebreak --></div>');
+
+  return processed;
+}
+
+function sanitizeHtmlForDocx(html?: string, isHeaderFooter: boolean = false): string {
+  if (!html) return '';
+  return preprocessHtmlPageBreaks(preprocessHtmlImages(preprocessHtmlTables(html), isHeaderFooter));
 }
 
 export async function buildDocx(params: {
@@ -117,9 +115,9 @@ export async function buildDocx(params: {
 }): Promise<Buffer> {
   const { bodyHtml, headerHtml, footerHtml, includeHeader, includeFooter, marginTop, marginBottom, marginLeft, marginRight } = params;
 
-  const processedBody = sanitizeHtmlForDocx(preprocessHtmlTables(bodyHtml));
-  const processedHeader = sanitizeHtmlForDocx(preprocessHtmlTables(headerHtml));
-  const processedFooter = sanitizeHtmlForDocx(preprocessHtmlTables(footerHtml));
+  const processedBody = sanitizeHtmlForDocx(bodyHtml, false);
+  const processedHeader = sanitizeHtmlForDocx(headerHtml, true);
+  const processedFooter = sanitizeHtmlForDocx(footerHtml, true);
 
   const hasImage = footerHtml && /<img/i.test(footerHtml);
   const enablePageNumber = includeFooter && !hasImage && (!footerHtml || /page/i.test(footerHtml));
@@ -131,8 +129,12 @@ export async function buildDocx(params: {
 
   const leftMargin = marginLeft !== undefined ? marginLeft : DEFAULT_LEFT;
   const rightMargin = marginRight !== undefined ? marginRight : DEFAULT_RIGHT;
-  const topMargin = marginTop !== undefined ? marginTop : DEFAULT_TOP;
-  const bottomMargin = marginBottom !== undefined ? marginBottom : DEFAULT_BOTTOM;
+  const baseTopMargin = marginTop !== undefined ? marginTop : DEFAULT_TOP;
+  const baseBottomMargin = marginBottom !== undefined ? marginBottom : DEFAULT_BOTTOM;
+
+  const extraBottomGapInches = 2 / 2.54; // 2cm in inches
+  const topMargin = includeHeader && processedHeader ? Math.max(baseTopMargin, (240 + 12) / 96) : baseTopMargin;
+  const bottomMargin = (includeFooter && processedFooter ? Math.max(baseBottomMargin, (215 + 12) / 96) : baseBottomMargin) + extraBottomGapInches;
 
   const buffer = await HTMLtoDOCX(
     processedBody,
@@ -142,14 +144,14 @@ export async function buildDocx(params: {
       footer: includeFooter,
       pageNumber: enablePageNumber,
       pageSize: {
-        width: 11906,
-        height: 16838,
+        width: 11906, // A4 Width in twips (210mm)
+        height: 16838, // A4 Height in twips (297mm)
       },
       margins: {
-        top: 0,
-        bottom: 0,
-        left: 0,
-        right: 0,
+        top: Math.round(topMargin * 1440),
+        bottom: Math.round(bottomMargin * 1440),
+        left: Math.round(leftMargin * 1440),
+        right: Math.round(rightMargin * 1440),
         header: 0,
         footer: 0,
       },
@@ -159,5 +161,5 @@ export async function buildDocx(params: {
     includeFooter ? processedFooter || '<p></p>' : undefined,
   );
 
-  return makeHeaderFooterXmlMarginless(buffer as Buffer, topMargin, bottomMargin, leftMargin, rightMargin);
+  return buffer as Buffer;
 }

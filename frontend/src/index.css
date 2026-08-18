@@ -782,38 +782,36 @@ div.page-break::after {
 .ProseMirror img,
 .template-creator-editor .ProseMirror img,
 .template-editor .ProseMirror img {
-  max-width: 100% !important;
-  height: auto !important;
-  display: block;
-  margin: 10px auto;
+  max-width: 100%;
+  height: auto;
   border-radius: 4px;
-  box-shadow: var(--shadow-sm);
-}
-
-/* Ensure editor text paragraphs layer cleanly on top of behind-text images */
-.ProseMirror p,
-.ProseMirror h1,
-.ProseMirror h2,
-.ProseMirror h3,
-.ProseMirror ul,
-.ProseMirror ol,
-.ProseMirror table {
-  position: relative;
-  z-index: 5;
+  box-shadow: none;
 }
 
 .ProseMirror [data-text-wrap="behind"],
-.ProseMirror .wrap-behind {
+.ProseMirror .wrap-behind,
+.a4-preview-page [data-text-wrap="behind"],
+.a4-preview-page .wrap-behind,
+.a4-page [data-text-wrap="behind"],
+.a4-page .wrap-behind {
   position: absolute !important;
-  z-index: 0 !important;
-  opacity: 0.65 !important;
+  z-index: 1 !important;
+  opacity: 0.85 !important;
   pointer-events: auto !important;
+  display: inline-block !important;
 }
 
 .ProseMirror [data-text-wrap="behind"] img,
-.ProseMirror .wrap-behind img {
-  opacity: 0.65 !important;
+.ProseMirror .wrap-behind img,
+.a4-preview-page [data-text-wrap="behind"] img,
+.a4-preview-page .wrap-behind img,
+.a4-page [data-text-wrap="behind"] img,
+.a4-page .wrap-behind img {
+  opacity: 0.85 !important;
   mix-blend-mode: multiply !important;
+  display: inline-block !important;
+  max-width: 100% !important;
+  height: auto !important;
 }
 
 /* Marginless Header & Footer overlays */
@@ -821,22 +819,45 @@ div.page-break::after {
 .editor-footer-overlay {
   left: 0 !important;
   right: 0 !important;
+  top: 0 !important;
   width: 100% !important;
+  max-width: 100% !important;
+  min-width: 100% !important;
   padding: 0 !important;
   margin: 0 !important;
+  line-height: 0 !important;
+  font-size: 0 !important;
   box-sizing: border-box !important;
+}
+
+.editor-footer-overlay {
+  top: auto !important;
+  bottom: 0 !important;
+}
+
+.editor-header-overlay img.full-width,
+.editor-footer-overlay img.full-width,
+.editor-header-overlay p > img[style*="width:100%"],
+.editor-footer-overlay p > img[style*="width:100%"],
+.editor-header-overlay p > img[style*="width: 100%"],
+.editor-footer-overlay p > img[style*="width: 100%"] {
+  width: 100% !important;
+  max-width: 100% !important;
+  display: block !important;
 }
 
 .editor-header-overlay img,
 .editor-footer-overlay img {
-  width: 100% !important;
-  max-width: 100% !important;
-  height: auto !important;
-  display: block !important;
-  margin: 0 !important;
-  padding: 0 !important;
-  border-radius: 0 !important;
-  box-shadow: none !important;
+  max-width: 100%;
+  height: auto;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-style: none;
+  border-radius: 0;
+  box-shadow: none;
+  outline: none;
+  background: transparent;
 }
 
 /* Ensure transparent PNG images (seals, stamps, signatures, logos) render without separate background or border boxes */
@@ -844,12 +865,15 @@ div.page-break::after {
 .template-editor img,
 .template-creator-editor img,
 .a4-page img,
+.a4-preview-page img,
 .editor-desk img {
   border: none !important;
   box-shadow: none !important;
   background: transparent !important;
   background-color: transparent !important;
   outline: none !important;
+  display: inline-block;
+  vertical-align: middle;
 }
 
 /* Dashboard Keyframe Animations & Animated Backgrounds */

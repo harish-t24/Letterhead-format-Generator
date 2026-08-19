@@ -90,9 +90,8 @@ async function buildDocx(params) {
     const rightMargin = marginRight !== undefined ? marginRight : DEFAULT_RIGHT;
     const baseTopMargin = marginTop !== undefined ? marginTop : DEFAULT_TOP;
     const baseBottomMargin = marginBottom !== undefined ? marginBottom : DEFAULT_BOTTOM;
-    const extraBottomGapInches = 2 / 2.54;
-    const topMargin = includeHeader && processedHeader ? Math.max(baseTopMargin, (240 + 12) / 96) : baseTopMargin;
-    const bottomMargin = (includeFooter && processedFooter ? Math.max(baseBottomMargin, (215 + 12) / 96) : baseBottomMargin) + extraBottomGapInches;
+    const topMargin = includeHeader && processedHeader ? Math.max(baseTopMargin, (240 + 8) / 96) : baseTopMargin;
+    const bottomMargin = includeFooter && processedFooter ? Math.max(baseBottomMargin, (215 + 8) / 96) : baseBottomMargin;
     const buffer = await (0, html_to_docx_1.default)(processedBody, includeHeader ? processedHeader || '<p></p>' : undefined, {
         header: includeHeader,
         footer: includeFooter,

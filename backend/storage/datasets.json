@@ -115,10 +115,11 @@
         "domain": "Frontend Developer",
         "start_date": "12",
         "end_date": "",
-        "stipend": "none"
+        "stipend": "none",
+        "date": "19/08/2026"
       },
       "createdAt": "2026-07-30T05:16:06.391Z",
-      "updatedAt": "2026-08-09T11:41:45.331Z",
+      "updatedAt": "2026-08-19T10:09:09.589Z",
       "lastUsedAt": "2026-08-09T11:44:46.564Z"
     },
     {
@@ -135,10 +136,11 @@
         "domain": "devops",
         "start_date": "23rd ",
         "end_date": "23",
-        "stipend": "none"
+        "stipend": "none",
+        "date": "19/08/2026"
       },
       "createdAt": "2026-07-31T06:15:53.490Z",
-      "updatedAt": "2026-07-31T06:37:30.325Z",
+      "updatedAt": "2026-08-19T10:09:07.286Z",
       "lastUsedAt": "2026-08-03T08:36:52.971Z"
     }
   ],

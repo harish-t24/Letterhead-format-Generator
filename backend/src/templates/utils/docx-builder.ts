@@ -132,9 +132,8 @@ export async function buildDocx(params: {
   const baseTopMargin = marginTop !== undefined ? marginTop : DEFAULT_TOP;
   const baseBottomMargin = marginBottom !== undefined ? marginBottom : DEFAULT_BOTTOM;
 
-  const extraBottomGapInches = 2 / 2.54; // 2cm in inches
-  const topMargin = includeHeader && processedHeader ? Math.max(baseTopMargin, (240 + 12) / 96) : baseTopMargin;
-  const bottomMargin = (includeFooter && processedFooter ? Math.max(baseBottomMargin, (215 + 12) / 96) : baseBottomMargin) + extraBottomGapInches;
+  const topMargin = includeHeader && processedHeader ? Math.max(baseTopMargin, (240 + 8) / 96) : baseTopMargin;
+  const bottomMargin = includeFooter && processedFooter ? Math.max(baseBottomMargin, (215 + 8) / 96) : baseBottomMargin;
 
   const buffer = await HTMLtoDOCX(
     processedBody,

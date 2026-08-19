@@ -13,7 +13,7 @@ import { TableRow } from '@tiptap/extension-table-row';
 import { TableCell } from '@tiptap/extension-table-cell';
 import { TableHeader } from '@tiptap/extension-table-header';
 import { Extension } from '@tiptap/core';
-import { useEffect, useImperativeHandle, forwardRef } from 'react';
+import { useEffect, useImperativeHandle, forwardRef, useState, useRef } from 'react';
 import { EditorToolbar } from './EditorToolbar';
 import { PageBreak } from './PageBreak';
 
@@ -315,14 +315,20 @@ export const TemplateCreatorEditor = forwardRef<TemplateCreatorEditorHandle, Pro
 
           let cleaned = html;
 
-          // 1. Clean MSO conditional comments from MS Word
+          // 1. Clean MSO conditional comments and Word XML junk
           cleaned = cleaned.replace(/<!--\[if[\s\S]*?<!\[endif\]-->/gi, '');
+          cleaned = cleaned.replace(/<xml>[\s\S]*?<\/xml>/gi, '');
 
-          // 2. Convert bold style spans/b tags to <strong> tags so ProseMirror registers bold
+          // 2. Convert Word / CSS page breaks to standard <div class="page-break"></div>
+          cleaned = cleaned.replace(/<(div|p|br|hr)[^>]*style=["'][^"']*(page-break-before\s*:\s*always|break-before\s*:\s*page)[^"']*["'][^>]*\/?>/gi, '<div class="page-break"></div>');
+
+          // 3. Convert bold/italic/underline style spans and tags to semantic HTML
           cleaned = cleaned.replace(/<span([^>]*?style=["'][^"']*font-weight\s*:\s*(bold|[5-9]\d{2})[^"']*["'][^>]*)>(.*?)<\/span>/gi, '<strong>$3</strong>');
           cleaned = cleaned.replace(/<b\b([^>]*)>(.*?)<\/b>/gi, '<strong>$2</strong>');
+          cleaned = cleaned.replace(/<i\b([^>]*)>(.*?)<\/i>/gi, '<em>$2</em>');
+          cleaned = cleaned.replace(/<u\b([^>]*)>(.*?)<\/u>/gi, '<u>$2</u>');
 
-          // 3. Convert <font face="..." color="..." size="..."> to <span style="...">
+          // 4. Convert legacy <font face="..." color="..." size="..."> to <span style="...">
           cleaned = cleaned.replace(/<font([^>]*?)>(.*?)<\/font>/gi, (_match, attrs, inner) => {
             const faceMatch = attrs.match(/face=["']([^"']+)["']/i);
             const colorMatch = attrs.match(/color=["']([^"']+)["']/i);
@@ -351,6 +357,14 @@ export const TemplateCreatorEditor = forwardRef<TemplateCreatorEditorHandle, Pro
           });
 
           return cleaned;
+        },
+        transformPastedText: (text) => {
+          if (!text) return '';
+          // Convert plain text multiline newlines into HTML paragraphs so line breaks are preserved
+          return text
+            .split(/\r?\n\r?\n/)
+            .map((p) => `<p>${p.replace(/\r?\n/g, '<br />')}</p>`)
+            .join('');
         },
         handlePaste: (view, event) => {
           const items = Array.from(event.clipboardData?.items || []);
@@ -429,19 +443,78 @@ export const TemplateCreatorEditor = forwardRef<TemplateCreatorEditorHandle, Pro
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
+    const [pageCount, setPageCount] = useState<number>(1);
+    const editorPaperRef = useRef<HTMLDivElement>(null);
+
     // Convert inches to pixels (1 inch = 96px)
     const marginTopPx = marginTop * 96;
     const marginBottomPx = marginBottom * 96;
     const marginLeftPx = marginLeft * 96;
     const marginRightPx = marginRight * 96;
 
+    useEffect(() => {
+      const updatePages = () => {
+        if (editorPaperRef.current) {
+          const contentHeight = editorPaperRef.current.scrollHeight;
+          // Count manual page breaks + auto height bounds (1123px per A4 page)
+          const manualBreaks = editorPaperRef.current.querySelectorAll('.page-break').length;
+          const autoHeightPages = Math.max(1, Math.ceil(contentHeight / 1123));
+          setPageCount(Math.max(autoHeightPages, manualBreaks + 1));
+        }
+      };
+
+      updatePages();
+      const observer = new ResizeObserver(updatePages);
+      if (editorPaperRef.current) {
+        observer.observe(editorPaperRef.current);
+      }
+      return () => observer.disconnect();
+    }, [initialHtml, editor?.getHTML()]);
+
     return (
       <div style={{ position: 'relative', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)' }}>
         <div style={{ position: 'sticky', top: 70, zIndex: 90, background: 'var(--bg-surface)', borderBottom: '1px solid var(--border-color)', boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)' }}>
           <EditorToolbar editor={editor} />
+          <div
+            style={{
+              background: '#f8fafc',
+              padding: '6px 16px',
+              borderTop: '1px solid var(--border-color)',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              flexWrap: 'wrap',
+              gap: 8,
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                📄 Page-by-Page Document Canvas
+              </span>
+              <span
+                style={{
+                  background: 'var(--primary-light)',
+                  color: 'var(--primary)',
+                  border: '1px solid #c7d2fe',
+                  padding: '2px 10px',
+                  borderRadius: 99,
+                  fontSize: 12,
+                  fontWeight: 700,
+                }}
+              >
+                {pageCount} {pageCount === 1 ? 'Page (A4)' : 'Pages (A4)'}
+              </span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, fontSize: 12, color: 'var(--text-secondary)' }}>
+              <span>Format: 210 × 297 mm (A4)</span>
+              <span>•</span>
+              <span>Visual Page Separators Enabled</span>
+            </div>
+          </div>
         </div>
         <div className="editor-desk" style={{ position: 'relative' }}>
           <div
+            ref={editorPaperRef}
             className="template-creator-editor"
             style={{
               position: 'relative',
@@ -452,7 +525,11 @@ export const TemplateCreatorEditor = forwardRef<TemplateCreatorEditorHandle, Pro
               padding: 0,
               boxSizing: 'border-box',
               background: '#ffffff',
-            }}
+              '--editor-margin-top': `${marginTopPx}px`,
+              '--editor-margin-bottom': `${marginBottomPx}px`,
+              '--editor-margin-left': `${marginLeftPx}px`,
+              '--editor-margin-right': `${marginRightPx}px`,
+            } as React.CSSProperties}
           >
             {headerHtml && (
               <div

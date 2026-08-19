@@ -102,9 +102,8 @@ export function A4DocumentPreview({
   const [footerFit, setFooterFit] = useState<'contain' | 'cover' | 'fill'>('contain');
   const [selectedTarget, setSelectedTarget] = useState<'header' | 'footer' | null>(null);
 
-  const autoTopMarginPx = headerHtml ? headerHeight + 12 : Math.round(marginTop * 96);
-  const extraBottomGapPx = Math.round((2 / 2.54) * 96); // 2cm = ~76px
-  const autoBottomMarginPx = (footerHtml ? footerHeight + 12 : Math.round(marginBottom * 96)) + extraBottomGapPx;
+  const autoTopMarginPx = headerHtml ? Math.max(Math.round(marginTop * 96), headerHeight + 8) : Math.round(marginTop * 96);
+  const autoBottomMarginPx = footerHtml ? Math.max(Math.round(marginBottom * 96), footerHeight + 8) : Math.round(marginBottom * 96);
   const marginLeftPx = Math.round(marginLeft * 96);
   const marginRightPx = Math.round(marginRight * 96);
 
@@ -508,7 +507,7 @@ export function A4DocumentPreview({
               }}
             >
               <div
-                className="tiptap prose"
+                className="rendering-content tiptap"
                 style={{ minHeight: '100%' }}
                 dangerouslySetInnerHTML={{ __html: chunkHtml || '' }}
               />

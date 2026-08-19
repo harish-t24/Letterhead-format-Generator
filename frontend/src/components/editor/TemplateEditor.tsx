@@ -63,8 +63,10 @@ export function TemplateEditor({ html, editable = false }: Props) {
   if (!editor) return null;
 
   return (
-    <div className="template-editor">
-      <EditorContent editor={editor} />
+    <div className="editor-desk">
+      <div className="template-editor" style={{ padding: '60px 60px' }}>
+        <EditorContent editor={editor} />
+      </div>
     </div>
   );
 }

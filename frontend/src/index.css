@@ -607,26 +607,31 @@ tr:hover td {
 /* A4 Page layout editor desk */
 .editor-desk {
   background: var(--bg-secondary);
-  padding: 30px 16px;
+  padding: 36px 16px 60px 16px;
   display: flex;
-  justify-content: center;
+  flex-direction: column;
+  align-items: center;
   box-sizing: border-box;
+  width: 100%;
 }
 
-.template-creator-editor {
+.template-creator-editor,
+.template-editor {
   border: 1px solid #cbd5e1 !important;
   border-radius: 4px !important;
-  padding: 80px 80px; /* standard document margins */
+  padding: 0 !important;
   background: #ffffff !important;
   width: 100%;
   max-width: 794px; /* A4 page standard width */
   min-height: 1123px !important; /* A4 page standard height */
-  box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.08), 0 8px 10px -6px rgba(15, 23, 42, 0.04) !important;
+  box-shadow: 0 12px 36px -4px rgba(15, 23, 42, 0.14), 0 4px 8px -2px rgba(15, 23, 42, 0.06) !important;
   box-sizing: border-box;
   margin: 0 auto;
+  position: relative;
 }
 
-.template-creator-editor .ProseMirror {
+.template-creator-editor .ProseMirror,
+.template-editor .ProseMirror {
   outline: none;
   min-height: 963px; /* A4 height minus top/bottom margins */
   width: 100%;
@@ -636,21 +641,29 @@ tr:hover td {
 
 .template-editor p,
 .template-creator-editor p,
+.a4-preview-page p,
+.rendering-content p,
 .template-editor li,
-.template-creator-editor li {
+.template-creator-editor li,
+.a4-preview-page li,
+.rendering-content li {
   margin: 0.5em 0;
   line-height: 1.6;
 }
 
 .template-editor ul,
-.template-creator-editor ul {
+.template-creator-editor ul,
+.a4-preview-page ul,
+.rendering-content ul {
   list-style: disc;
   padding-left: 1.5em;
   margin: 0.5em 0;
 }
 
 .template-editor ol,
-.template-creator-editor ol {
+.template-creator-editor ol,
+.a4-preview-page ol,
+.rendering-content ol {
   list-style: decimal;
   padding-left: 1.5em;
   margin: 0.5em 0;
@@ -661,7 +674,13 @@ tr:hover td {
 .template-editor h3,
 .template-creator-editor h1,
 .template-creator-editor h2,
-.template-creator-editor h3 {
+.template-creator-editor h3,
+.a4-preview-page h1,
+.a4-preview-page h2,
+.a4-preview-page h3,
+.rendering-content h1,
+.rendering-content h2,
+.rendering-content h3 {
   margin: 0.8em 0 0.4em;
   font-family: 'Outfit', sans-serif;
   color: var(--text-primary);
@@ -717,42 +736,99 @@ canvas:hover {
   }
 }
 
-/* Page Break Element */
+/* Page Break Element — Standalone atom block node */
 div.page-break {
-  break-before: column !important;
+  break-before: page !important;
   page-break-before: always !important;
   page-break-after: always !important;
-  margin: 32px 0 !important;
-  border: none !important;
+  margin-top: 32px !important;
+  margin-bottom: 32px !important;
+  margin-left: calc(-1 * var(--editor-margin-left, 80px)) !important;
+  margin-right: calc(-1 * var(--editor-margin-right, 80px)) !important;
+  width: calc(100% + var(--editor-margin-left, 80px) + var(--editor-margin-right, 80px)) !important;
+  height: 48px !important;
+  background: var(--bg-secondary) !important;
   border-top: 2px dashed #94a3b8 !important;
-  height: 1px !important;
-  position: relative;
-  overflow: visible;
-  display: block;
+  border-bottom: 2px dashed #94a3b8 !important;
+  position: relative !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  box-shadow: inset 0 4px 8px rgba(0, 0, 0, 0.05), inset 0 -4px 8px rgba(0, 0, 0, 0.05) !important;
+  user-select: none !important;
+  cursor: pointer !important;
+  box-sizing: border-box !important;
+  clear: both !important;
+}
+
+div.page-break:hover {
+  background: #e2e8f0 !important;
+  border-top-color: #6366f1 !important;
+  border-bottom-color: #6366f1 !important;
 }
 
 div.page-break::after {
-  content: "Page Break";
-  position: absolute;
-  top: -10px;
-  left: 50%;
-  transform: translateX(-50%);
+  content: "📄 PAGE BREAK — END OF PAGE";
   background: #ffffff;
-  color: #64748b;
+  color: #334155;
   font-family: 'Outfit', sans-serif;
-  font-size: 10px;
-  font-weight: 700;
+  font-size: 11px;
+  font-weight: 800;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  padding: 2px 8px;
-  border: 1px solid #cbd5e1;
-  border-radius: 4px;
+  letter-spacing: 0.08em;
+  padding: 4px 16px;
+  border: 1px solid #94a3b8;
+  border-radius: 99px;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
   pointer-events: none;
+}
+
+/* Preserve text alignment and font styles across preview and editor */
+.a4-preview-page [style*="text-align: center"],
+.template-creator-editor [style*="text-align: center"],
+.template-editor [style*="text-align: center"],
+p[style*="text-align: center"],
+h1[style*="text-align: center"],
+h2[style*="text-align: center"],
+h3[style*="text-align: center"] {
+  text-align: center !important;
+}
+
+.a4-preview-page [style*="text-align: right"],
+.template-creator-editor [style*="text-align: right"],
+.template-editor [style*="text-align: right"],
+p[style*="text-align: right"],
+h1[style*="text-align: right"],
+h2[style*="text-align: right"],
+h3[style*="text-align: right"] {
+  text-align: right !important;
+}
+
+.a4-preview-page [style*="text-align: justify"],
+.template-creator-editor [style*="text-align: justify"],
+.template-editor [style*="text-align: justify"],
+p[style*="text-align: justify"],
+h1[style*="text-align: justify"],
+h2[style*="text-align: justify"],
+h3[style*="text-align: justify"] {
+  text-align: justify !important;
+}
+
+.a4-preview-page [style*="text-align: left"],
+.template-creator-editor [style*="text-align: left"],
+.template-editor [style*="text-align: left"],
+p[style*="text-align: left"],
+h1[style*="text-align: left"],
+h2[style*="text-align: left"],
+h3[style*="text-align: left"] {
+  text-align: left !important;
 }
 
 /* Document table formatting */
 .template-editor table,
-.template-creator-editor .ProseMirror table {
+.template-creator-editor .ProseMirror table,
+.a4-preview-page table,
+.rendering-content table {
   width: 100% !important;
   border-collapse: collapse !important;
   margin: 1em 0 !important;
@@ -762,7 +838,11 @@ div.page-break::after {
 .template-editor table td,
 .template-editor table th,
 .template-creator-editor .ProseMirror table td,
-.template-creator-editor .ProseMirror table th {
+.template-creator-editor .ProseMirror table th,
+.a4-preview-page table td,
+.a4-preview-page table th,
+.rendering-content table td,
+.rendering-content table th {
   border: 1px solid #cbd5e1 !important;
   padding: 8px 12px !important;
   min-width: 1em !important;
@@ -773,15 +853,19 @@ div.page-break::after {
 }
 
 .template-editor table th,
-.template-creator-editor .ProseMirror table th {
+.template-creator-editor .ProseMirror table th,
+.a4-preview-page table th,
+.rendering-content table th {
   font-weight: bold !important;
   background-color: #f8fafc !important;
 }
 
-/* Image formatting in editor */
+/* Image formatting in editor & preview */
 .ProseMirror img,
 .template-creator-editor .ProseMirror img,
-.template-editor .ProseMirror img {
+.template-editor .ProseMirror img,
+.a4-preview-page img,
+.rendering-content img {
   max-width: 100%;
   height: auto;
   border-radius: 4px;

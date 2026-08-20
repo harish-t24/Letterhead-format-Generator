@@ -649,6 +649,15 @@ tr:hover td {
 .rendering-content li {
   margin: 0.5em 0;
   line-height: 1.6;
+  min-height: 1.2em;
+}
+
+.template-editor p:empty::before,
+.template-creator-editor p:empty::before,
+.a4-preview-page p:empty::before,
+.rendering-content p:empty::before {
+  content: '\00a0';
+  display: inline-block;
 }
 
 .template-editor ul,

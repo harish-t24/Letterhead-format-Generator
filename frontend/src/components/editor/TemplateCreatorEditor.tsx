@@ -13,7 +13,7 @@ import { TableRow } from '@tiptap/extension-table-row';
 import { TableCell } from '@tiptap/extension-table-cell';
 import { TableHeader } from '@tiptap/extension-table-header';
 import { Extension } from '@tiptap/core';
-import { useEffect, useImperativeHandle, forwardRef, useState, useRef } from 'react';
+import { useEffect, useImperativeHandle, forwardRef, useState, useRef, useLayoutEffect } from 'react';
 import { EditorToolbar } from './EditorToolbar';
 import { PageBreak } from './PageBreak';
 
@@ -445,12 +445,39 @@ export const TemplateCreatorEditor = forwardRef<TemplateCreatorEditorHandle, Pro
 
     const [pageCount, setPageCount] = useState<number>(1);
     const editorPaperRef = useRef<HTMLDivElement>(null);
+    const headerOverlayRef = useRef<HTMLDivElement>(null);
+    const footerOverlayRef = useRef<HTMLDivElement>(null);
+    const [headerDomHeight, setHeaderDomHeight] = useState(0);
+    const [footerDomHeight, setFooterDomHeight] = useState(0);
+
+    useLayoutEffect(() => {
+      if (headerOverlayRef.current) {
+        const h = headerOverlayRef.current.getBoundingClientRect().height || headerOverlayRef.current.offsetHeight;
+        if (h > 0 && Math.abs(h - headerDomHeight) > 2) {
+          setHeaderDomHeight(Math.round(h));
+        }
+      }
+      if (footerOverlayRef.current) {
+        const f = footerOverlayRef.current.getBoundingClientRect().height || footerOverlayRef.current.offsetHeight;
+        if (f > 0 && Math.abs(f - footerDomHeight) > 2) {
+          setFooterDomHeight(Math.round(f));
+        }
+      }
+    }, [headerHtml, footerHtml]);
 
     // Convert inches to pixels (1 inch = 96px)
-    const marginTopPx = marginTop * 96;
-    const marginBottomPx = marginBottom * 96;
-    const marginLeftPx = marginLeft * 96;
-    const marginRightPx = marginRight * 96;
+    const marginTopPx = Math.round(marginTop * 96);
+    const marginBottomPx = Math.round(marginBottom * 96);
+    const marginLeftPx = Math.round(marginLeft * 96);
+    const marginRightPx = Math.round(marginRight * 96);
+
+    const autoTopMarginPx = headerHtml
+      ? Math.max(marginTopPx, headerDomHeight > 0 ? headerDomHeight + 12 : 240)
+      : marginTopPx;
+
+    const autoBottomMarginPx = footerHtml
+      ? Math.max(marginBottomPx, footerDomHeight > 0 ? footerDomHeight + 12 : 200)
+      : marginBottomPx;
 
     useEffect(() => {
       const updatePages = () => {
@@ -525,14 +552,15 @@ export const TemplateCreatorEditor = forwardRef<TemplateCreatorEditorHandle, Pro
               padding: 0,
               boxSizing: 'border-box',
               background: '#ffffff',
-              '--editor-margin-top': `${marginTopPx}px`,
-              '--editor-margin-bottom': `${marginBottomPx}px`,
+              '--editor-margin-top': `${autoTopMarginPx}px`,
+              '--editor-margin-bottom': `${autoBottomMarginPx}px`,
               '--editor-margin-left': `${marginLeftPx}px`,
               '--editor-margin-right': `${marginRightPx}px`,
             } as React.CSSProperties}
           >
             {headerHtml && (
               <div
+                ref={headerOverlayRef}
                 className="editor-header-overlay"
                 style={{
                   position: 'absolute',
@@ -550,6 +578,7 @@ export const TemplateCreatorEditor = forwardRef<TemplateCreatorEditorHandle, Pro
             )}
             {footerHtml && (
               <div
+                ref={footerOverlayRef}
                 className="editor-footer-overlay"
                 style={{
                   position: 'absolute',
@@ -565,7 +594,7 @@ export const TemplateCreatorEditor = forwardRef<TemplateCreatorEditorHandle, Pro
                 dangerouslySetInnerHTML={{ __html: footerHtml }}
               />
             )}
-            <div style={{ padding: `${marginTopPx}px ${marginRightPx}px ${marginBottomPx}px ${marginLeftPx}px`, boxSizing: 'border-box', minHeight: '100%' }}>
+            <div style={{ padding: `${autoTopMarginPx}px ${marginRightPx}px ${autoBottomMarginPx}px ${marginLeftPx}px`, boxSizing: 'border-box', minHeight: '100%' }}>
               <EditorContent editor={editor} />
             </div>
           </div>

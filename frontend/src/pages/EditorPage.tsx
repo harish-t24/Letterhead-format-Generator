@@ -34,10 +34,10 @@ export function EditorPage() {
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
-    if (templateId && activeTemplate?.id !== templateId) {
+    if (templateId) {
       api.getTemplate(templateId).then(setActiveTemplate);
     }
-  }, [templateId, activeTemplate, setActiveTemplate]);
+  }, [templateId, setActiveTemplate]);
 
   const debouncedRowId = useDebouncedValue(activeRowId, 300);
 

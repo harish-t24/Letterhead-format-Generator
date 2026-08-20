@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useLayoutEffect } from 'react';
 
 interface Props {
   pdfUrl?: string | null;
@@ -56,18 +56,21 @@ function paginateHtmlContent(html: string, maxPageHeightPx: number = 700): strin
   let currentEstHeight = 0;
 
   for (const block of blocks) {
-    let blockHeight = 28;
+    let blockHeight = 32;
+    if (/<h[1-6]/i.test(block)) {
+      blockHeight = 44;
+    }
     if (/<img/i.test(block)) {
       const hMatch = block.match(/height=["']?(\d+)["']?/i);
-      blockHeight += hMatch ? parseInt(hMatch[1], 10) : 150;
+      blockHeight += hMatch ? parseInt(hMatch[1], 10) : 160;
     }
     if (/<table/i.test(block)) {
       const trCount = (block.match(/<tr/gi) || []).length;
-      blockHeight += Math.max(trCount * 36, 60);
+      blockHeight += Math.max(trCount * 40, 70);
     }
     const textLen = block.replace(/<[^>]+>/g, '').length;
-    const estimatedLines = Math.ceil(textLen / 70);
-    blockHeight += Math.max(0, (estimatedLines - 1) * 22);
+    const estimatedLines = Math.ceil(textLen / 65);
+    blockHeight += Math.max(0, (estimatedLines - 1) * 26);
 
     if (currentEstHeight > 0 && currentEstHeight + blockHeight > maxPageHeightPx) {
       finalPages.push(currentPageHtml);
@@ -102,8 +105,31 @@ export function A4DocumentPreview({
   const [footerFit, setFooterFit] = useState<'contain' | 'cover' | 'fill'>('contain');
   const [selectedTarget, setSelectedTarget] = useState<'header' | 'footer' | null>(null);
 
-  const autoTopMarginPx = headerHtml ? Math.max(Math.round(marginTop * 96), headerHeight + 8) : Math.round(marginTop * 96);
-  const autoBottomMarginPx = footerHtml ? Math.max(Math.round(marginBottom * 96), footerHeight + 8) : Math.round(marginBottom * 96);
+  const headerRef = useRef<HTMLDivElement>(null);
+  const footerRef = useRef<HTMLDivElement>(null);
+  const [headerDomHeight, setHeaderDomHeight] = useState(0);
+  const [footerDomHeight, setFooterDomHeight] = useState(0);
+
+  useLayoutEffect(() => {
+    if (headerRef.current) {
+      const h = headerRef.current.getBoundingClientRect().height || headerRef.current.offsetHeight;
+      if (h > 0 && Math.abs(h - headerDomHeight) > 2) {
+        setHeaderDomHeight(Math.round(h));
+      }
+    }
+    if (footerRef.current) {
+      const f = footerRef.current.getBoundingClientRect().height || footerRef.current.offsetHeight;
+      if (f > 0 && Math.abs(f - footerDomHeight) > 2) {
+        setFooterDomHeight(Math.round(f));
+      }
+    }
+  }, [headerHtml, footerHtml]);
+
+  const effectiveHeaderHeight = headerDomHeight > 0 ? headerDomHeight : headerHeight;
+  const effectiveFooterHeight = footerDomHeight > 0 ? footerDomHeight : footerHeight;
+
+  const autoTopMarginPx = headerHtml ? Math.max(Math.round(marginTop * 96), effectiveHeaderHeight + 12) : Math.round(marginTop * 96);
+  const autoBottomMarginPx = footerHtml ? Math.max(Math.round(marginBottom * 96), effectiveFooterHeight + 12) : Math.round(marginBottom * 96);
   const marginLeftPx = Math.round(marginLeft * 96);
   const marginRightPx = Math.round(marginRight * 96);
 
@@ -376,7 +402,7 @@ export function A4DocumentPreview({
                   transition: 'all 0.15s ease',
                 }}
               >
-                <div dangerouslySetInnerHTML={{ __html: headerHtml }} />
+                <div ref={headerRef} dangerouslySetInnerHTML={{ __html: headerHtml }} />
                 {!readOnly && selectedTarget === 'header' && (
                   <div
                     style={{
@@ -451,7 +477,7 @@ export function A4DocumentPreview({
                   transition: 'all 0.15s ease',
                 }}
               >
-                <div dangerouslySetInnerHTML={{ __html: footerHtml }} />
+                <div ref={footerRef} dangerouslySetInnerHTML={{ __html: footerHtml }} />
                 {!readOnly && selectedTarget === 'footer' && (
                   <div
                     style={{
@@ -498,17 +524,26 @@ export function A4DocumentPreview({
               </div>
             )}
 
-            {/* Content Body — controlled by content margins */}
+            {/* Content Body — strictly bounded within header and footer gap */}
             <div
               style={{
-                padding: `${autoTopMarginPx}px ${marginRightPx}px ${autoBottomMarginPx}px ${marginLeftPx}px`,
-                minHeight: '100%',
+                paddingTop: `${autoTopMarginPx}px`,
+                paddingBottom: `${autoBottomMarginPx}px`,
+                paddingLeft: `${marginLeftPx}px`,
+                paddingRight: `${marginRightPx}px`,
+                height: '1123px',
+                maxHeight: '1123px',
                 boxSizing: 'border-box',
+                overflow: 'hidden',
               }}
             >
               <div
                 className="rendering-content tiptap"
-                style={{ minHeight: '100%' }}
+                style={{
+                  maxHeight: `${availableMaxBodyHeight}px`,
+                  overflow: 'hidden',
+                  boxSizing: 'border-box',
+                }}
                 dangerouslySetInnerHTML={{ __html: chunkHtml || '' }}
               />
             </div>

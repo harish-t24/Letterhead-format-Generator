@@ -124,6 +124,7 @@ export function TemplateCreatorPage() {
         if (cancelled) return;
         lastSavedHtml.current = debouncedHtml;
         setTemplate(updated);
+        upsertTemplate(updated);
         setStatus('saved');
         setPreviewNonce((n) => n + 1);
       })
@@ -172,6 +173,7 @@ export function TemplateCreatorPage() {
         right
       );
       setTemplate(updated);
+      upsertTemplate(updated);
       setMarginTop(updated.marginTop ?? 1.0);
       setMarginBottom(updated.marginBottom ?? 1.0);
       setMarginLeft(updated.marginLeft ?? 1.0);
@@ -233,6 +235,7 @@ export function TemplateCreatorPage() {
         marginRight
       );
       setTemplate(updated);
+      upsertTemplate(updated);
       setStatus('saved');
       setPreviewNonce((n) => n + 1);
     } catch (err) {
